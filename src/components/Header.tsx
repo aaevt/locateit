@@ -35,7 +35,7 @@ export default function Header() {
               </Link>
             </li>
           </ul>
-          <ThemeSwitch />
+          {/* <ThemeSwitch /> */}
         </nav>
       </div>
     </header>
