@@ -14,9 +14,8 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, content, isOpen, t
   return (
     <div className="mb-4">
       <div
-        className={`w-full rounded-lg overflow-hidden ${
-          isOpen ? "bg-black dark:bg-gray-900" : "bg-black dark:bg-gray-900"
-        }`}
+        className={`w-full rounded-lg overflow-hidden ${isOpen ? "bg-black dark:bg-gray-900" : "bg-black dark:bg-gray-900"
+          }`}
       >
         <button className="w-full text-left p-4 flex justify-between items-center" onClick={toggleOpen}>
           <span className="text-xl font-semibold text-white dark:text-white">{title}</span>
@@ -25,9 +24,8 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, content, isOpen, t
           </span>
         </button>
         <div
-          className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${
-            isOpen ? "max-h-[1000px]" : "max-h-0"
-          }`}
+          className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isOpen ? "max-h-[1000px]" : "max-h-0"
+            }`}
         >
           <div className="p-4">
             <p className="text-white font-light">{content}</p>
