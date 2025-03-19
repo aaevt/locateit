@@ -6,24 +6,18 @@ import Footer from "@/components/Footer";
 
 import CanvasBuilder from "@/components/constructor/CanvasBuilder";
 import CustomCanvas from "@/components/constructor/CustomCanvas";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-
+import Toolbar from "@/components/constructor/Toolbar";
 
 export default function Constructor() {
   const [canvasDimensions, setCanvasDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // новое состояние для отслеживания загрузки
+  const [isLoading, setIsLoading] = useState(true);
+  const [scale, setScale] = useState(1); // Состояние для масштаба
 
-  const handleCanvasSubmit = (width: number, height: number) => {
+  const handleCanvasSubmit = (width: number, height: number, backgroundColor: string, showGrid: boolean) => {
     setCanvasDimensions({ width, height });
     localStorage.setItem("canvasCreated", "true");
+    localStorage.setItem("canvasBackgroundColor", backgroundColor);
+    localStorage.setItem("canvasShowGrid", showGrid.toString());
   };
 
   useEffect(() => {
@@ -45,18 +39,25 @@ export default function Constructor() {
     }
   }, [canvasDimensions]);
 
+  const handleWheel = (event: React.WheelEvent) => {
+    event.preventDefault();
+    setScale((prevScale) => {
+      let newScale = prevScale + event.deltaY * -0.001;
+      return Math.min(Math.max(newScale, 0.5), 2); // Ограничение масштаба (0.5x - 2x)
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-white dark:bg-black">
         <Header />
-        <main className="flex flex-grow flex-col items-center">
-          {/* <div className='flex space-x-2 justify-center items-center bg-white h-screen dark:invert'>
-            <span className='sr-only'>Loading...</span>
-            <div className='h-8 w-8 bg-black rounded-full animate-bounce [animation-delay:-0.3s]'></div>
-            <div className='h-8 w-8 bg-black rounded-full animate-bounce [animation-delay:-0.15s]'></div>
-            <div className='h-8 w-8 bg-black rounded-full animate-bounce'></div>
-          </div> */}
-
+        <main className="flex flex-grow flex-col items-center justify-center">
+          <div className="flex space-x-2 justify-center items-center bg-white h-screen dark:invert">
+            <span className="sr-only">Loading...</span>
+            <div className="h-8 w-8 bg-black rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="h-8 w-8 bg-black rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="h-8 w-8 bg-black rounded-full animate-bounce"></div>
+          </div>
         </main>
         <Footer />
       </div>
@@ -66,16 +67,26 @@ export default function Constructor() {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black">
       <Header />
-      <main className="flex flex-grow flex-col items-center">
+      <main className="flex flex-grow flex-col items-center justify-center overflow-hidden">
         {!canvasDimensions ? (
           <CanvasBuilder onSubmit={handleCanvasSubmit} />
         ) : (
-          <div className="border border-black">
-            <CustomCanvas
-              width={canvasDimensions.width}
-              height={canvasDimensions.height}
-              backgroundColor="#000000"
-            />
+          <div 
+            className="border border-black flex items-center justify-center overflow-hidden"
+            onWheel={handleWheel} // Обрабатываем колесо мыши
+          >
+            <div
+              className="transform transition-transform"
+              style={{ transform: `scale(${scale})` }} // Применяем масштаб
+            >
+              <CustomCanvas
+                width={canvasDimensions.width}
+                height={canvasDimensions.height}
+                backgroundColor={localStorage.getItem("canvasBackgroundColor") || "#ffffff"}
+                showGrid={localStorage.getItem("canvasShowGrid") === "true"}
+              />
+
+            </div>
           </div>
         )}
       </main>
