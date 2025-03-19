@@ -1,26 +1,66 @@
-"use client";
-import React, { useEffect, useRef, useState } from "react";
-import { Rect, Circle } from "fabric";
+import React from "react";
+import { FaMousePointer, FaPencilAlt, FaSquare, FaCircle, FaTrash, FaRulerCombined} from "react-icons/fa";
 
 interface ToolbarProps {
-  onDelete: () => void;
-  onAdd: () => void;
+  activeTool: string | null;
+  setActiveTool: (tool: string) => void;
+  addText: () => void;
+  addRectangle: () => void;
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({ onAdd, onDelete }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, addRectangle, addCircle }) => {
   return (
-    <div className="toolbar bg-gray-800 p-4 text-white flex space-x-4">
+    <div className="flex flex-col space-y-2 p-4 border-r">
       <button
-        onClick={onDelete}
-        className="bg-red-500 hover:bg-red-700 px-4 py-2 rounded"
+        onClick={() => {
+          setActiveTool("text");
+          addText();
+        }}
+        className={`p-2 border rounded ${activeTool === "text" ? "bg-gray-300" : ""}`}
       >
-        Delete Selected
+        <FaPencilAlt size={24} />
       </button>
       <button
-        onClick={onAdd}
-        className="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded"
+        onClick={() => {
+          setActiveTool("rect");
+          addRectangle();
+        }}
+        className={`p-2 border rounded ${activeTool === "rect" ? "bg-gray-300" : ""}`}
       >
-        Add Rectangle
+        <FaSquare size={24} />
+      </button>
+      <button
+        onClick={() => {
+          setActiveTool("circle");
+          addCircle();
+        }}
+        className={`p-2 border rounded ${activeTool === "circle" ? "bg-gray-300" : ""}`}
+      >
+        <FaCircle size={24} />
+      </button>
+      <button
+        onClick={() => {
+          setActiveTool("select");
+        }}
+        className={`p-2 border rounded ${activeTool === "select" ? "bg-gray-300" : ""}`}
+      >
+        <FaMousePointer size={24} />
+      </button>
+      <button
+        onClick={() => {
+          const canvas = document.getElementById("canvas");
+          canvas.clear();
+        }}
+        className="p-2 border rounded"
+      >
+        <FaTrash size={24} />
+      </button>
+      <button
+        onClick={() => {
+        }}
+        className="p-2 border rounded"
+      >
+        <FaRulerCombined size={24} />
       </button>
     </div>
   );
