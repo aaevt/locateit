@@ -49,7 +49,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, a
       <button
         onClick={() => {
           const canvas = document.getElementById("canvas");
-          canvas.clear();
         }}
         className="p-2 border rounded"
       >

@@ -17,6 +17,11 @@ const CustomCanvas: React.FC<CanvasProps> = ({ width, height, backgroundColor, s
 
   const gridSize = 50;
 
+  const saveCanvasState = (canvas: Canvas) => {
+    const canvasState = canvas.toJSON();
+    localStorage.setItem("canvasState", JSON.stringify(canvasState));
+  };
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -26,6 +31,14 @@ const CustomCanvas: React.FC<CanvasProps> = ({ width, height, backgroundColor, s
       backgroundColor,
       showGrid,
     });
+
+
+    const savedCanvasState = localStorage.getItem("canvasState");
+    if (savedCanvasState) {
+      newCanvas.loadFromJSON(JSON.parse(savedCanvasState), () => {
+        newCanvas.renderAll();
+      });
+    }
 
     newCanvas.on('object:moving', (e) => {
       const object = e.target;
@@ -58,6 +71,11 @@ const CustomCanvas: React.FC<CanvasProps> = ({ width, height, backgroundColor, s
 
         object.setCoords();
       }
+    });
+
+    newCanvas.on('object:modified', () => {
+      saveCanvasState(newCanvas);
+      console.log(newCanvas, saveCanvasState(newCanvas));
     });
 
     setCanvas(newCanvas);
@@ -102,7 +120,7 @@ const CustomCanvas: React.FC<CanvasProps> = ({ width, height, backgroundColor, s
 
   useEffect(() => {
     if (canvas && showGrid) {
-      canvas.clear();
+      clearGrid();
       drawGrid(canvas, gridSize);
     } else {
       clearGrid();
