@@ -7,7 +7,7 @@ const Features = () => {
   const features = [
     {
       icon: SiNextdotjs,
-      title: "Next.js 14",
+      title: "Next.js 15",
       description: "App dir, Routing, Layouts, components, and more.",
     },
     {
@@ -24,17 +24,7 @@ const Features = () => {
       icon: SiTailwindcss,
       title: "Components",
       description: "Awesome components built with Tailwind CSS and more to come.",
-    },
-    {
-      icon: FaShieldAlt,
-      title: "Authentication",
-      description: "Talk about your authentication features built into your app.",
-    },
-    {
-      icon: SiStripe,
-      title: "Subscriptions",
-      description: "Talk about your subscription features and how they work.",
-    },
+    }
   ];
 
   return (
