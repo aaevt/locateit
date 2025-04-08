@@ -11,7 +11,7 @@ import Toolbar from "@/components/constructor/Toolbar";
 export default function Constructor() {
   const [canvasDimensions, setCanvasDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [scale, setScale] = useState(1); // Состояние для масштаба
+  const [scale, setScale] = useState(1);
 
   const handleCanvasSubmit = (width: number, height: number, backgroundColor: string, showGrid: boolean) => {
     setCanvasDimensions({ width, height });
@@ -43,7 +43,7 @@ export default function Constructor() {
     event.preventDefault();
     setScale((prevScale) => {
       let newScale = prevScale + event.deltaY * -0.001;
-      return Math.min(Math.max(newScale, 0.5), 2); // Ограничение масштаба (0.5x - 2x)
+      return Math.min(Math.max(newScale, 0.5), 2);
     });
   };
 
@@ -71,23 +71,12 @@ export default function Constructor() {
         {!canvasDimensions ? (
           <CanvasBuilder onSubmit={handleCanvasSubmit} />
         ) : (
-          <div 
-            className="border border-black flex items-center justify-center overflow-hidden"
-            onWheel={handleWheel} // Обрабатываем колесо мыши
-          >
-            <div
-              className="transform transition-transform"
-              style={{ transform: `scale(${scale})` }} // Применяем масштаб
-            >
               <CustomCanvas
                 width={canvasDimensions.width}
                 height={canvasDimensions.height}
                 backgroundColor={localStorage.getItem("canvasBackgroundColor") || "#ffffff"}
                 showGrid={localStorage.getItem("canvasShowGrid") === "true"}
               />
-
-            </div>
-          </div>
         )}
       </main>
       <Footer />
