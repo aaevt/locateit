@@ -14,7 +14,7 @@ const ErrorComponent = ({ errorCode, message }: ErrorComponentProps) => {
         href="/"
         className="bg-black text-white dark:bg-white dark:text-black px-5 py-2 rounded-md text-base font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition mt-4"
       >
-        Go back home
+        Go back to home
       </Link>
     </div>
   );
