@@ -8,10 +8,11 @@ interface ToolbarProps {
   addRoom: () => void; 
   addWall: () => void;
   addStairs: () => void;
+  addDoor: () => void;
   deleteSelected: () => void;
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, addRoom, addWall, addStairs, deleteSelected }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, addRoom, addWall, addStairs, addDoor, deleteSelected }) => {
   return (
     <div className="flex flex-row items-center space-x-2 p-4 w-full bg-gray-100 border rounded-b-lg border-gray-300 shadow-sm">
 
@@ -33,7 +34,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, a
           }}
           onDoubleClick={() => {
             localStorage.clear();
-            alert("localStorage очищен!");
+            alert("Canvas cleared!");
           }}
           className="p-2 border rounded"
         >
@@ -55,29 +56,50 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, a
 
         <button
           onClick={() => {
-            setActiveTool("rect");
+            setActiveTool("Room");
             addRoom();
           }}
-          className={`p-2 border rounded ${activeTool === "rect" ? "bg-gray-300" : ""}`}
+          className={`p-2 border rounded ${activeTool === "Room" ? "bg-gray-300" : ""}`}
         >
           <FaSquare size={24} />
         </button>
 
-        {/* <button
+        <button
           onClick={() => {
-            setActiveTool("circle");
+            setActiveTool("Wall");
+            addWall();
           }}
-          className={`p-2 border rounded ${activeTool === "circle" ? "bg-gray-300" : ""}`}
+          className={`p-2 border rounded ${activeTool === "Wall" ? "bg-gray-300" : ""}`}
         >
-          <FaCircle size={24} />
-        </button> */}
+          <FaCircle size={20} />
+        </button> 
+
+        <button
+          onClick={() => {
+            setActiveTool("Stairs");
+            addStairs();
+          }}
+          className={`p-2 border rounded ${activeTool === "Stairs" ? "bg-gray-300" : ""}`}
+        >
+          <FaSquare size={20} />
+        </button> 
+
+        <button
+          onClick={() => {
+            setActiveTool("Door");
+            addDoor();
+          }}
+          className={`p-2 border rounded ${activeTool === "Door" ? "bg-gray-300" : ""}`}
+        >
+          <FaSquare size={20} />
+        </button> 
       </div>
+      
 
       {/* Прочее */}
       <div className="flex space-x-2 ml-4">
         <button
           onClick={() => {
-            toggleGrid();
           }}
           className="p-2 border rounded"
         >
@@ -85,18 +107,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool, addText, a
         </button>
       </div>
 
-      {/* Экспорт */}
-      <div className="flex space-x-2 ml-4">
-        <button
-          onClick={() => {
-
-          }}
-          className="p-2 border rounded"
-        >
-          <FaRulerCombined size={24} />
-        </button>
-      </div>
-      
     </div >
   );
 };

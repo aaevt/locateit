@@ -23,7 +23,7 @@ const Layersbar: React.FC<LayersProps> = ({ }) => {
           }}
           className="p-2 border rounded"
         >
-          <Fa0 size={24} />
+          <Fa1 size={24} />
         </button>
       </div>
       

@@ -1,12 +1,14 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { Canvas, Rect, Circle, FabricText, Line } from 'fabric'
+
 import Toolbar from './Toolbar'
 import Downloadbar from './Downloadbar'
 import Layersbar from "./Layersbar";
 import Room from './Objects/Room';
 import Wall from './Objects/Wall';
 import Stairs from './Objects/Stairs';
+import Door from './Objects/Door';
 
 interface CanvasProps {
   width: number;
@@ -50,33 +52,36 @@ const CustomCanvas: React.FC<CanvasProps> = ({
     newCanvas.on('object:moving', (e) => {
       const object = e.target;
       if (object && showGrid) {
-        // Snap to grid
+        const gridX = Math.round(object.left / gridSize) * gridSize;
+        const gridY = Math.round(object.top / gridSize) * gridSize;
         object.set({
-          left: Math.round(object.left / gridSize) * gridSize,
-          top: Math.round(object.top / gridSize) * gridSize,
-          angle: 0,
-          lockRotation: true // Блокируем возможность вращ
+          left: gridX,
+          top: gridY,
         });
     
+        // Учитываем угол поворота
         let angle = object.angle || 0;
-        angle = Math.round(angle / 90) * 90; // Округляем угол
-        object.set({
-          angle: angle,
-        });
-        object.setCoords();
+        angle = Math.round(angle / 90) * 90;
+        object.set({ angle });
     
-        // Prevent the object from going out of bounds
+        // Получаем реальные габариты объекта с учётом трансформаций
+        const bounds = object.getBoundingRect(true);
         const canvasWidth = newCanvas.getWidth();
         const canvasHeight = newCanvas.getHeight();
     
-        if (object.left < 0) object.set('left', 0);
-        if (object.top < 0) object.set('top', 0);
-        if (object.left + object.width > canvasWidth) object.set('left', canvasWidth - object.width);
-        if (object.top + object.height > canvasHeight) object.set('top', canvasHeight - object.height);
+        if (bounds.left < 0) object.set('left', object.left - bounds.left);
+        if (bounds.top < 0) object.set('top', object.top - bounds.top);
+        if (bounds.left + bounds.width > canvasWidth) {
+          object.set('left', object.left - (bounds.left + bounds.width - canvasWidth));
+        }
+        if (bounds.top + bounds.height > canvasHeight) {
+          object.set('top', object.top - (bounds.top + bounds.height - canvasHeight));
+        }
     
         object.setCoords();
       }
     });
+    
 
     newCanvas.on('object:scaling', (e) => {
       const object = e.target;
@@ -89,8 +94,6 @@ const CustomCanvas: React.FC<CanvasProps> = ({
           height: newHeight,
           scaleX: 1,
           scaleY: 1,
-          angle: 0, // Фиксируем угол
-          lockRotation: true
         });
 
         object.setCoords();
@@ -278,7 +281,15 @@ const CustomCanvas: React.FC<CanvasProps> = ({
     canvas.centerObject(stairs);
   };
 
-
+  const addDoor = () => {
+    if (!canvas) return;
+    const door = new Door({
+      left: 150,
+      top: 150,
+    });
+    canvas.add(door);
+    canvas.centerObject(door);
+  };
 
 
 return (
@@ -291,6 +302,7 @@ return (
       addRoom={addRoom}
       addWall={addWall}
       addStairs={addStairs}
+      addDoor={addDoor}
       deleteSelected={deleteSelected}
     />
 
@@ -302,7 +314,7 @@ return (
       </div>
 
       {/* Layers bar on the right */}
-      <div className="w-64 border-l border-gray-300">
+      <div className=" p-4 border-l border-gray-300">
         <Layersbar />
       </div>
     </div>

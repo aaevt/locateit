@@ -1,25 +1,51 @@
-import React from 'react';
-import { Line } from 'fabric';
+import { Rect } from 'fabric';
 
 interface WallProps {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  stroke: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  fill?: string;
 }
 
-const Wall: React.FC<WallProps> = ({ x1, y1, x2, y2, stroke }) => {
-  return (
-    <Line
-      x1={x1}
-      y1={y1}
-      x2={x2}
-      y2={y2}
-      stroke={stroke}
-      strokeWidth={4}
-    />
-  );
-};
+export default function Wall({
+  left,
+  top,
+  width,
+  height,
+  fill = 'gray',
+}: WallProps) {
+  const rect = new Rect({
+    left,
+    top,
+    width,
+    height,
+    fill,
+    originX: 'left',
+    originY: 'top',
+    stroke: 'black',
+    strokeWidth: 1,
+    hasControls: true,
+    objectCaching: false,
+  });
 
-export default Wall;
+  rect.on('scaling', () => {
+    const scaleX = rect.scaleX ?? 1;
+    const scaleY = rect.scaleY ?? 1;
+
+    const newWidth = Math.round(rect.width * scaleX);
+    const newHeight = Math.round(rect.height * scaleY);
+
+    rect.set({
+      width: newWidth,
+      height: newHeight,
+      scaleX: 1,
+      scaleY: 1,
+    });
+
+    rect.setCoords();
+    rect.canvas?.renderAll();
+  });
+
+  return rect;
+}
