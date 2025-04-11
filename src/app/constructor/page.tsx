@@ -3,17 +3,24 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
 import CanvasBuilder from "@/components/constructor/CanvasBuilder";
 import CustomCanvas from "@/components/constructor/CustomCanvas";
 import Toolbar from "@/components/constructor/Toolbar";
 
 export default function Constructor() {
-  const [canvasDimensions, setCanvasDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [canvasDimensions, setCanvasDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [scale, setScale] = useState(1);
 
-  const handleCanvasSubmit = (width: number, height: number, backgroundColor: string, showGrid: boolean) => {
+  const handleCanvasSubmit = (
+    width: number,
+    height: number,
+    backgroundColor: string,
+    showGrid: boolean,
+  ) => {
     setCanvasDimensions({ width, height });
     localStorage.setItem("canvasCreated", "true");
     localStorage.setItem("canvasBackgroundColor", backgroundColor);
@@ -26,7 +33,10 @@ export default function Constructor() {
       const savedWidth = localStorage.getItem("canvasWidth");
       const savedHeight = localStorage.getItem("canvasHeight");
       if (savedWidth && savedHeight) {
-        setCanvasDimensions({ width: parseInt(savedWidth), height: parseInt(savedHeight) });
+        setCanvasDimensions({
+          width: parseInt(savedWidth),
+          height: parseInt(savedHeight),
+        });
       }
     }
     setIsLoading(false);
@@ -42,7 +52,7 @@ export default function Constructor() {
   const handleWheel = (event: React.WheelEvent) => {
     event.preventDefault();
     setScale((prevScale) => {
-      let newScale = prevScale + event.deltaY * -0.001;
+      const newScale = prevScale + event.deltaY * -0.001;
       return Math.min(Math.max(newScale, 0.5), 2);
     });
   };
@@ -71,12 +81,14 @@ export default function Constructor() {
         {!canvasDimensions ? (
           <CanvasBuilder onSubmit={handleCanvasSubmit} />
         ) : (
-              <CustomCanvas
-                width={canvasDimensions.width}
-                height={canvasDimensions.height}
-                backgroundColor={localStorage.getItem("canvasBackgroundColor") || "#ffffff"}
-                showGrid={localStorage.getItem("canvasShowGrid") === "true"}
-              />
+          <CustomCanvas
+            width={canvasDimensions.width}
+            height={canvasDimensions.height}
+            backgroundColor={
+              localStorage.getItem("canvasBackgroundColor") || "#ffffff"
+            }
+            showGrid={localStorage.getItem("canvasShowGrid") === "true"}
+          />
         )}
       </main>
       <Footer />

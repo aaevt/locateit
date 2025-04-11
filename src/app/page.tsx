@@ -19,7 +19,9 @@ export default function Home() {
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-gray-900 dark:text-white mb-4">
                 Maps
               </h2>
-              <p className="text-xl font-light">Postgres basic database and other cool features to come.</p>
+              <p className="text-xl font-light">
+                Postgres basic database and other cool features to come.
+              </p>
             </>
           }
           rightHalf={
@@ -32,7 +34,7 @@ export default function Home() {
             />
           }
         />
-       <Section
+        <Section
           leftHalf={<Accordion />}
           rightHalf={
             <div className="flex flex-col justify-end">
@@ -40,8 +42,9 @@ export default function Home() {
                 Highlight the key features
               </h2>
               <p className="text-xl font-light">
-                Talk about some of the key features of your app that you want to highlight. Use the beautiful accordion
-                to highlight the key features of your app.
+                Talk about some of the key features of your app that you want to
+                highlight. Use the beautiful accordion to highlight the key
+                features of your app.
               </p>
             </div>
           }
