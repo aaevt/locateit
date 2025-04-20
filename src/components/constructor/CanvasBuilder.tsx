@@ -14,6 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
@@ -111,14 +112,15 @@ const CanvasBuilder: React.FC<CanvasBuilderProps> = ({ onSubmit }) => {
           control={form.control}
           name="showGrid"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Show grid</FormLabel>
+            <FormItem className="flex flex-row items-center justify-between rounded-lg ">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Show grid</FormLabel>
+                <FormDescription>Use grid system or plain.</FormDescription>
+              </div>
               <FormControl>
-                <Input
-                  id="showGrid"
-                  type="checkbox"
+                <Switch
                   checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
+                  onCheckedChange={field.onChange}
                 />
               </FormControl>
               <FormMessage />
@@ -126,7 +128,9 @@ const CanvasBuilder: React.FC<CanvasBuilderProps> = ({ onSubmit }) => {
           )}
         />
 
-        <Button type="submit">Submit</Button>
+        <div className="flex justify-end">
+          <Button variant="outline" type="submit" className="ml-auto">Submit</Button>
+        </div>
       </form>
     </Form>
   );

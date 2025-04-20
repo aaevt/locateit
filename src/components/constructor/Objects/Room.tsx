@@ -53,7 +53,7 @@ export default function Room({
     subTargetCheck: true,
   });
 
-  group.on('scaled', () => {
+  group.on("scaling", () => {
     const scaleX = group.scaleX ?? 1;
     const scaleY = group.scaleY ?? 1;
 
