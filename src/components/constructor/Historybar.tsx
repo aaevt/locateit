@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { History, Undo, Redo, ChevronLeft, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -10,6 +10,14 @@ interface HistoryAction {
   timestamp: number;
 }
 
+interface FloorData {
+  id: string;
+  name: string;
+  canvasState: string;
+  history: string[];
+  historyIndex: number;
+}
+
 interface HistorybarProps {
   actions: HistoryAction[];
   onUndo: () => void;
@@ -18,6 +26,7 @@ interface HistorybarProps {
   canRedo: boolean;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  floorId: string;
 }
 
 const Historybar: React.FC<HistorybarProps> = ({
@@ -27,15 +36,44 @@ const Historybar: React.FC<HistorybarProps> = ({
   canUndo,
   canRedo,
   isCollapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  floorId
 }) => {
+  const [currentFloor, setCurrentFloor] = useState<FloorData | null>(null);
+
+  useEffect(() => {
+    const savedFloors = localStorage.getItem('canvasFloors');
+    if (savedFloors) {
+      const floors = JSON.parse(savedFloors);
+      const floor = floors.find((f: FloorData) => f.id === floorId);
+      if (floor) {
+        setCurrentFloor(floor);
+      }
+    }
+  }, [floorId]);
+
+  const getActionDescription = (state: string, index: number) => {
+    try {
+      const parsedState = JSON.parse(state);
+      if (index === 0) return 'Начальное состояние';
+      if (parsedState.objects) {
+        const objects = parsedState.objects;
+        if (objects.length === 0) return 'Пустой этаж';
+        return `Объектов: ${objects.length}`;
+      }
+    } catch (error) {
+      console.error('Error parsing state:', error);
+    }
+    return 'Неизвестное состояние';
+  };
+
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col transition-all duration-300`}>
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col transition-all duration-300 h-full`}>
       <div className="flex items-center justify-between mb-4">
         {!isCollapsed ? (
           <h3 className="text-lg font-medium flex items-center">
             <History className="mr-2 h-5 w-5" />
-            История
+            История {currentFloor?.name ? `(${currentFloor.name})` : ''}
           </h3>
         ) : (
           <History className="h-5 w-5" />
@@ -77,16 +115,22 @@ const Historybar: React.FC<HistorybarProps> = ({
       {!isCollapsed ? (
         <>
           <Separator className="my-2" />
-          <div className="flex-1 overflow-y-auto space-y-2">
-            {actions.map((action) => (
+          <div className="flex-1 overflow-y-auto space-y-2" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            {currentFloor?.history.map((state, index) => (
               <div
-                key={action.id}
-                className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md"
+                key={index}
+                className={`p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  index === currentFloor.historyIndex
+                    ? 'bg-blue-100 dark:bg-blue-900'
+                    : 'bg-gray-50 dark:bg-gray-700'
+                }`}
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-sm">{action.description}</span>
+                  <span className="text-sm">
+                    {getActionDescription(state, index)}
+                  </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(action.timestamp).toLocaleTimeString()}
+                    {new Date(JSON.parse(state).timestamp || Date.now()).toLocaleTimeString()}
                   </span>
                 </div>
               </div>

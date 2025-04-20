@@ -136,31 +136,6 @@ const CustomCanvas = forwardRef<CanvasRef, CanvasProps>(({
     setActions(prev => [...prev, newAction]);
   };
 
-  const saveCanvasState = (canvas: Canvas) => {
-    try {
-      const canvasState = canvas.toJSON();
-      const savedFloors = localStorage.getItem('canvasFloors');
-      if (savedFloors) {
-        const floors = JSON.parse(savedFloors);
-        const updatedFloors = floors.map((floor: FloorData) => {
-          if (floor.id === floorId) {
-            const newHistory = [...floor.history.slice(0, floor.historyIndex + 1), JSON.stringify(canvasState)];
-            return {
-              ...floor,
-              canvasState: JSON.stringify(canvasState),
-              history: newHistory,
-              historyIndex: newHistory.length - 1
-            };
-          }
-          return floor;
-        });
-        localStorage.setItem('canvasFloors', JSON.stringify(updatedFloors));
-      }
-    } catch (error) {
-      console.error('Error saving canvas state:', error);
-    }
-  };
-
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -212,15 +187,34 @@ const CustomCanvas = forwardRef<CanvasRef, CanvasProps>(({
       newCanvas.clear();
     }
 
-    newCanvas.on('object:added', () => {
-      saveCanvasState(newCanvas);
-    });
-    newCanvas.on('object:modified', () => {
-      saveCanvasState(newCanvas);
-    });
-    newCanvas.on('object:removed', () => {
-      saveCanvasState(newCanvas);
-    });
+    // Save state on any canvas change
+    const saveState = () => {
+      const canvasState = newCanvas.toJSON();
+      canvasState.timestamp = Date.now();
+      
+      const savedFloors = localStorage.getItem('canvasFloors');
+      if (savedFloors) {
+        const floors = JSON.parse(savedFloors);
+        const updatedFloors = floors.map((floor: FloorData) => {
+          if (floor.id === floorId) {
+            const newHistory = floor.history.slice(0, floor.historyIndex + 1);
+            newHistory.push(JSON.stringify(canvasState));
+            return {
+              ...floor,
+              canvasState: JSON.stringify(canvasState),
+              history: newHistory,
+              historyIndex: newHistory.length - 1
+            };
+          }
+          return floor;
+        });
+        localStorage.setItem('canvasFloors', JSON.stringify(updatedFloors));
+      }
+    };
+
+    newCanvas.on('object:added', saveState);
+    newCanvas.on('object:removed', saveState);
+    newCanvas.on('object:modified', saveState);
 
     newCanvas.on('object:moving', (e) => {
       const object = e.target;
@@ -568,6 +562,30 @@ const CustomCanvas = forwardRef<CanvasRef, CanvasProps>(({
     addAction('add', 'Добавлена дверь');
   };
 
+  const saveCanvasState = (canvas: Canvas) => {
+    const canvasState = canvas.toJSON();
+    canvasState.timestamp = Date.now();
+    
+    const savedFloors = localStorage.getItem('canvasFloors');
+    if (savedFloors) {
+      const floors = JSON.parse(savedFloors);
+      const updatedFloors = floors.map((floor: FloorData) => {
+        if (floor.id === floorId) {
+          const newHistory = floor.history.slice(0, floor.historyIndex + 1);
+          newHistory.push(JSON.stringify(canvasState));
+          return {
+            ...floor,
+            canvasState: JSON.stringify(canvasState),
+            history: newHistory,
+            historyIndex: newHistory.length - 1
+          };
+        }
+        return floor;
+      });
+      localStorage.setItem('canvasFloors', JSON.stringify(updatedFloors));
+    }
+  };
+
   useImperativeHandle(ref, () => ({
     undo: handleUndo,
     redo: handleRedo,
@@ -585,7 +603,7 @@ const CustomCanvas = forwardRef<CanvasRef, CanvasProps>(({
   return (
     <div className="flex h-full">
       <div className={`transition-all duration-300 ${isHistoryCollapsed ? 'w-12' : 'w-64'}`}>
-        <Historybar 
+        <Historybar
           actions={actions}
           onUndo={handleUndo}
           onRedo={handleRedo}
@@ -593,6 +611,7 @@ const CustomCanvas = forwardRef<CanvasRef, CanvasProps>(({
           canRedo={true}
           isCollapsed={isHistoryCollapsed}
           onToggleCollapse={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
+          floorId={floorId}
         />
       </div>
       <div className="flex-1 relative overflow-hidden">
