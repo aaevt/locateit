@@ -53,7 +53,6 @@ export default function Room({
     subTargetCheck: true,
   });
 
-  // 🔁 Обновление размеров и текста после масштабирования
   group.on('scaled', () => {
     const scaleX = group.scaleX ?? 1;
     const scaleY = group.scaleY ?? 1;
@@ -81,7 +80,6 @@ export default function Room({
     group.canvas?.renderAll();
   });
 
-  // ✍️ Обновление текста
   group.on('mousedblclick', (e) => {
     if (e.subTargets && e.subTargets[0] === text) {
       const newLabel = prompt('Введите новое имя комнаты:', text.text || '');

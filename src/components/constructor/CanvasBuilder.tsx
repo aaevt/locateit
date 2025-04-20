@@ -42,7 +42,7 @@ const CanvasBuilder: React.FC<CanvasBuilderProps> = ({ onSubmit }) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(({ width, height, backgroundColor, showGrid }) => onSubmit(width, height, backgroundColor, showGrid))}
-        className="space-y-8"
+        className="space-y-8 p-5 border-1 rounded-sm"
       >
         <FormField
           control={form.control}

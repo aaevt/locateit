@@ -59,12 +59,10 @@ const CustomCanvas: React.FC<CanvasProps> = ({
           top: gridY,
         });
     
-        // Учитываем угол поворота
         let angle = object.angle || 0;
         angle = Math.round(angle / 90) * 90;
         object.set({ angle });
     
-        // Получаем реальные габариты объекта с учётом трансформаций
         const bounds = object.getBoundingRect(true);
         const canvasWidth = newCanvas.getWidth();
         const canvasHeight = newCanvas.getHeight();
@@ -114,7 +112,6 @@ const CustomCanvas: React.FC<CanvasProps> = ({
 
   const exportCanvasJSON = () => {
     if (canvas) {
-      // Удаляем объекты сетки перед экспортом
       clearGrid();
 
       const json = canvas.toJSON();
@@ -124,7 +121,6 @@ const CustomCanvas: React.FC<CanvasProps> = ({
       link.download = 'canvas-export.json';
       link.click();
 
-      // Восстанавливаем сетку после экспорта
       if (showGrid) {
         drawGrid(canvas, gridSize);
       }
@@ -143,7 +139,7 @@ const CustomCanvas: React.FC<CanvasProps> = ({
         if (event.target?.result) {
           const json = JSON.parse(event.target.result as string);
           canvas.loadFromJSON(json, () => {
-            canvas.renderAll();  // Рендерим канвас после загрузки
+            canvas.renderAll();
           });
         }
       };
@@ -155,18 +151,15 @@ const CustomCanvas: React.FC<CanvasProps> = ({
 
   const exportCanvasSVG = () => {
     if (canvas) {
-      // Удалить все линии (сетка)
       clearGrid();
 
-      // Экспортировать канвас в SVG
       const svg = canvas.toSVG();
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'canvas-export.svg'; // Название файла
+      link.download = 'canvas-export.svg';
       link.click();
 
-      // Возвращаем сетку обратно после экспорта
       if (showGrid) {
         drawGrid(canvas, gridSize);
       }
@@ -267,7 +260,6 @@ const CustomCanvas: React.FC<CanvasProps> = ({
     canvas.centerObject(wall);
   };
 
-  // Add Stairs to canvas
   const addStairs = () => {
     if (!canvas) return;
     const stairs = new Stairs({
@@ -294,7 +286,6 @@ const CustomCanvas: React.FC<CanvasProps> = ({
 
 return (
   <div className="flex flex-col h-full">
-    {/* Toolbar at the top */}
     <Toolbar
       activeTool={activeTool}
       setActiveTool={setActiveTool}
@@ -306,20 +297,16 @@ return (
       deleteSelected={deleteSelected}
     />
 
-    {/* Main area: canvas + layers bar */}
     <div className="flex flex-grow overflow-hidden">
-      {/* Canvas section */}
       <div className="p-4 flex-grow overflow-auto">
         <canvas id="canvas" ref={canvasRef} />
       </div>
 
-      {/* Layers bar on the right */}
       <div className=" p-4 border-l border-gray-300">
         <Layersbar />
       </div>
     </div>
 
-    {/* Download bar at the bottom */}
     <Downloadbar
       exportCanvasJSON={exportCanvasJSON}
       exportCanvasSVG={exportCanvasSVG}
