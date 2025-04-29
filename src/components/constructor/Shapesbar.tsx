@@ -11,10 +11,20 @@ import {
   ToolType,
   useActiveToolStore,
 } from "@/components/constructor/stores/useActiveToolStore";
-import { LineChart, DoorOpen, Square, ArrowUpDown, Dot } from "lucide-react";
+import {
+  LineChart,
+  DoorOpen,
+  Square,
+  ArrowUpDown,
+  Dot,
+  Clock,
+} from "lucide-react";
+import { useState } from "react";
+import HistoryPanel from "@/components/constructor/HistoryPanel";
 
 export default function Shapesbar() {
   const { activeTool, setActiveTool } = useActiveToolStore();
+  const [showHistory, setShowHistory] = useState(false);
 
   const tools: { tool: ToolType; icon: React.ReactNode; label: string }[] = [
     { tool: "wall", icon: <LineChart className="h-5 w-5" />, label: "Стена" },
@@ -48,6 +58,24 @@ export default function Shapesbar() {
             </TooltipContent>
           </Tooltip>
         ))}
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setShowHistory(!showHistory)}
+              className="transition-all duration-300"
+            >
+              <Clock className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" align="center">
+            История
+          </TooltipContent>
+        </Tooltip>
+
+        {showHistory && <HistoryPanel />}
       </div>
     </TooltipProvider>
   );

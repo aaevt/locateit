@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as fabric from "fabric";
 import { useCanvasStore } from "@/components/constructor/stores/useCanvasStore";
 import { useFloorStore } from "@/components/constructor/stores/useFloorStore";
 import { useHistoryStore } from "@/components/constructor/stores/useHistoryStore";
 import { useActiveToolStore } from "@/components/constructor/stores/useActiveToolStore";
 import { useCanvasSettingsStore } from "@/components/constructor/stores/useCanvasSettingsStore";
+
+import * as fabric from "fabric";
 
 import {
   loadFromStorage,
@@ -18,7 +19,9 @@ import { createDoor } from "@/components/constructor/objects/Door";
 import { createRoom } from "@/components/constructor/objects/Room";
 import { createStairs } from "@/components/constructor/objects/Stairs";
 import { createPoint } from "@/components/constructor/objects/Point";
+
 import CanvasSettings from "@/components/constructor/CanvasSettings";
+import ZoomControls from "@/components/constructor/ZoomControls";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -97,6 +100,7 @@ export default function Canvas() {
         const delta = new fabric.Point(e.e.movementX, e.e.movementY);
         canvas.relativePan(delta);
         limitPan();
+        drawGrid();
       }
     };
 
@@ -516,41 +520,13 @@ export default function Canvas() {
         className="absolute bottom-4 right-4 flex flex-col items-center gap-2 bg-white p-2 rounded shadow"
         style={{ zIndex: 10 }}
       >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            setZoom((prev) => {
-              const newZoom = Math.min(prev + 0.1, 3);
-              fabricCanvas.current?.setZoom(newZoom);
-              fabricCanvas.current?.requestRenderAll();
-              return newZoom;
-            });
-          }}
-          className="p-1"
-        >
-          ➕
-        </button>
-
-        <div>{Math.round(zoom * 100)}%</div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            setZoom((prev) => {
-              const newZoom = Math.max(prev - 0.1, MIN_ZOOM);
-              fabricCanvas.current?.setZoom(newZoom);
-              limitPan(); // обязательно
-              fabricCanvas.current?.requestRenderAll();
-              drawGrid();
-              return newZoom;
-            });
-          }}
-          className="p-1"
-        >
-          ➖
-        </button>
+        <ZoomControls
+          zoom={zoom}
+          setZoom={setZoom}
+          fabricCanvas={fabricCanvas.current}
+          limitPan={limitPan}
+          drawGrid={drawGrid}
+        />
       </div>
     </div>
   );
