@@ -1,182 +1,117 @@
-import React from "react";
-import { 
-  MousePointer, 
-  Trash2, 
-  Type, 
-  Square, 
-  Circle, 
-  ArrowUpDown, 
-  DoorOpen, 
-  Ruler,
-  Layers,
-  Download,
-  Upload
-} from "lucide-react";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  MousePointer,
+  Trash2,
+  Undo2,
+  Redo2,
+  Settings,
+  Hand,
+} from "lucide-react";
 
-interface ToolbarProps {
-  activeTool: string | null;
-  setActiveTool: (tool: string) => void;
-  addText: () => void;
-  addRoom: () => void; 
-  addWall: () => void;
-  addStairs: () => void;
-  addDoor: () => void;
-  deleteSelected: () => void;
-  onExportJSON?: () => void;
-  onExportSVG?: () => void;
-  onImportJSON?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
+import {
+  ToolType,
+  useActiveToolStore,
+} from "@/components/constructor/stores/useActiveToolStore";
+import { useHistoryStore } from "@/components/constructor/stores/useHistoryStore";
+import { useCanvasSettingsStore } from "@/components/constructor/stores/useCanvasSettingsStore";
 
-const Toolbar: React.FC<ToolbarProps> = ({ 
-  activeTool, 
-  setActiveTool, 
-  addText, 
-  addRoom, 
-  addWall, 
-  addStairs, 
-  addDoor, 
-  deleteSelected,
-  onExportJSON,
-  onExportSVG,
-  onImportJSON
-}) => {
+export default function Toolbar() {
+  const { activeTool, setActiveTool } = useActiveToolStore();
+  const { undo, redo, past, future } = useHistoryStore();
+  const { open: openCanvasSettings } = useCanvasSettingsStore();
+
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 z-10">
-      <div className="flex items-center space-x-2">
-        {/* Selection Tools */}
-        <div className="flex items-center space-x-1">
-          <Button
-            variant={activeTool === "select" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => setActiveTool("select")}
-            className="h-9 w-9"
-          >
-            <MousePointer className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setActiveTool("delete");
-              deleteSelected();
-            }}
-            onDoubleClick={() => {
-              localStorage.clear();
-              alert("Canvas cleared!");
-            }}
-            className="h-9 w-9"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+    <TooltipProvider>
+      <div className="fixed top-[80px] left-1/2 -translate-x-1/2 flex items-center space-x-2 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border z-50 transition-all duration-300">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={activeTool === "none" ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setActiveTool("none")}
+            >
+              <MousePointer className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Выделение</TooltipContent>
+        </Tooltip>
 
-        <Separator orientation="vertical" className="h-9" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={activeTool === "move" ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setActiveTool("move")}
+            >
+              <Hand className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Перемещение</TooltipContent>
+        </Tooltip>
 
-        {/* Drawing Tools */}
-        <div className="flex items-center space-x-1">
-          <Button
-            variant={activeTool === "text" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => {
-              setActiveTool("text");
-              addText();
-            }}
-            className="h-9 w-9"
-          >
-            <Type className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={activeTool === "Room" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => {
-              setActiveTool("Room");
-              addRoom();
-            }}
-            className="h-9 w-9"
-          >
-            <Square className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={activeTool === "Wall" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => {
-              setActiveTool("Wall");
-              addWall();
-            }}
-            className="h-9 w-9"
-          >
-            <Circle className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={activeTool === "Stairs" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => {
-              setActiveTool("Stairs");
-              addStairs();
-            }}
-            className="h-9 w-9"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={activeTool === "Door" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => {
-              setActiveTool("Door");
-              addDoor();
-            }}
-            className="h-9 w-9"
-          >
-            <DoorOpen className="h-4 w-4" />
-          </Button>
-        </div>
+        <Separator orientation="vertical" className="h-6" />
 
-        <Separator orientation="vertical" className="h-9" />
-
-        {/* Measurement Tool */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {}}
-          className="h-9 w-9"
-        >
-          <Ruler className="h-4 w-4" />
-        </Button>
-
-        <Separator orientation="vertical" className="h-9" />
-
-        {/* Export/Import Tools */}
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onExportJSON}
-            className="h-9 w-9"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <label htmlFor="file-upload">
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 cursor-pointer"
+              onClick={undo}
+              disabled={!past.length}
             >
-              <Upload className="h-4 w-4" />
+              <Undo2 className="h-4 w-4" />
             </Button>
-          </label>
-          <input
-            id="file-upload"
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={onImportJSON}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
+          </TooltipTrigger>
+          <TooltipContent>Undo</TooltipContent>
+        </Tooltip>
 
-export default Toolbar;
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={redo}
+              disabled={!future.length}
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Redo</TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={activeTool === "delete" ? "destructive" : "ghost"}
+              size="icon"
+              onClick={() => setActiveTool("delete")}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Удаление</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={openCanvasSettings}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Настройки</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
+  );
+}
