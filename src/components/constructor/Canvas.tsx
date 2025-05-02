@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import * as fabric from "fabric";
 import { useCanvasSettingsStore } from "./stores/useCanvasSettingsStore";
 import { useCanvasSetup } from "./hooks/useCanvasSetup";
@@ -9,6 +9,7 @@ import { useCanvasPan } from "./hooks/useCanvasPan";
 import { useObjectTransform } from "./hooks/useObjectTransform";
 import { useCanvasTools } from "./hooks/useCanvasTools";
 import { useCanvasGrid } from "./hooks/useCanvasGrid";
+import { useCanvasStore } from "./stores/useCanvasStore";
 import ZoomControls from "./ZoomControls";
 
 export default function Canvas() {
@@ -21,6 +22,7 @@ export default function Canvas() {
 
   const { gridSize, backgroundColor, canvasWidth, canvasHeight, open } =
     useCanvasSettingsStore();
+  const { setCanvas } = useCanvasStore();
 
   const [showGrid, setShowGrid] = useState(true);
 
@@ -63,6 +65,16 @@ export default function Canvas() {
   useCanvasPan(fabricCanvas, drawGrid, limitPan);
   useObjectTransform(fabricCanvas, gridSize);
   useCanvasTools(fabricCanvas, gridSize);
+
+  // Устанавливаем canvas в store после инициализации
+  useEffect(() => {
+    if (fabricCanvas.current) {
+      setCanvas(fabricCanvas.current);
+    }
+    return () => {
+      setCanvas(null);
+    };
+  }, [fabricCanvas.current]);
 
   return (
     <div

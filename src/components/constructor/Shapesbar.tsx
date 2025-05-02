@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import HistoryPanel from "@/components/constructor/HistoryPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Shapesbar() {
   const { activeTool, setActiveTool } = useActiveToolStore();
@@ -40,42 +41,37 @@ export default function Shapesbar() {
 
   return (
     <TooltipProvider>
-      <div className="fixed top-[100px] left-4 flex flex-col items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border z-40 transition-all duration-300">
-        {tools.map(({ tool, icon, label }) => (
-          <Tooltip key={tool}>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant={activeTool === tool ? "default" : "ghost"}
-                onClick={() => setActiveTool(tool)}
-                className="transition-all duration-300"
-              >
-                {icon}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" align="center">
-              {label}
-            </TooltipContent>
-          </Tooltip>
-        ))}
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => setShowHistory(!showHistory)}
-              className="transition-all duration-300"
-            >
-              <Clock className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right" align="center">
-            История
-          </TooltipContent>
-        </Tooltip>
-
-        {showHistory && <HistoryPanel />}
+      <div className="h-full w-[300px] bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border z-40 transition-all duration-300">
+        <Tabs defaultValue="forms" className="w-full h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="forms">Формы</TabsTrigger>
+            <TabsTrigger value="history">История</TabsTrigger>
+          </TabsList>
+          <TabsContent value="forms" className="mt-4 flex-1">
+            <div className="flex flex-col items-center gap-4 h-full">
+              {tools.map(({ tool, icon, label }) => (
+                <Tooltip key={tool}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant={activeTool === tool ? "default" : "ghost"}
+                      onClick={() => setActiveTool(tool)}
+                      className="transition-all duration-300"
+                    >
+                      {icon}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    {label}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TabsContent>
+          <TabsContent value="history" className="mt-4">
+            <HistoryPanel />
+          </TabsContent>
+        </Tabs>
       </div>
     </TooltipProvider>
   );
