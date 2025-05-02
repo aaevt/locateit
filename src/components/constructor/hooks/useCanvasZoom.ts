@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import * as fabric from "fabric";
 
 export const useCanvasZoom = (
-  fabricCanvas: React.MutableRefObject<fabric.Canvas | null>,
+  fabricCanvas: React.RefObject<fabric.Canvas | null>,
   drawGrid: () => void,
   limitPan: () => void,
   zoom: number,

@@ -12,7 +12,7 @@ import {
   useActiveToolStore,
 } from "@/components/constructor/stores/useActiveToolStore";
 import {
-  LineChart,
+  BrickWall,
   DoorOpen,
   Square,
   ArrowUpDown,
@@ -27,7 +27,7 @@ export default function Shapesbar() {
   const [showHistory, setShowHistory] = useState(false);
 
   const tools: { tool: ToolType; icon: React.ReactNode; label: string }[] = [
-    { tool: "wall", icon: <LineChart className="h-5 w-5" />, label: "Стена" },
+    { tool: "wall", icon: <BrickWall className="h-5 w-5" />, label: "Стена" },
     { tool: "door", icon: <DoorOpen className="h-5 w-5" />, label: "Дверь" },
     { tool: "room", icon: <Square className="h-5 w-5" />, label: "Комната" },
     {

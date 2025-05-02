@@ -1,39 +1,108 @@
-import { Group, classRegistry, IGroupOptions, Object as FabricObject } from "fabric";
+import {
+  Group,
+  Rect,
+  Textbox,
+  classRegistry,
+  type SerializedGroupProps,
+  type TClassProperties,
+  type TOptions,
+  type ObjectEvents,
+  type RectProps,
+} from 'fabric';
 
-type RoomSerializedProps = IGroupOptions & {
-  type: "room";
-  objects: FabricObject[];
-};
+interface RoomExtraProps {
+  label?: string;
+  roomNumber?: number;
+}
 
-export class Room extends Group {
-  static type = "room";
 
-  constructor(objects: FabricObject[], options: IGroupOptions = {}) {
-    super(objects, {
-      ...options,
-      type: Room.type,
+export interface SerializedRoomProps extends SerializedGroupProps, RoomExtraProps {}
+export interface RoomProps extends SerializedRoomProps {}
+
+export class Room<
+  Props extends TOptions<RoomProps> = Partial<RoomProps>,
+  SProps extends SerializedRoomProps = SerializedRoomProps,
+  EventSpec extends ObjectEvents = ObjectEvents
+> extends Group<Props, SProps, EventSpec> {
+  static type = 'room';
+  declare label?: string;
+  declare roomNumber?: number;
+  constructor(
+    label: string = '',
+    rectOptions: Partial<RectProps> & { roomNumber?: number } = {}
+  ) {
+    const width = rectOptions.width ?? 50;
+    const height = rectOptions.height ?? 50;
+  
+    const rect = new Rect({
+      width,
+      height,
+      fill: 'rgba(0, 0, 255, 0.5)',
+      stroke: rectOptions.stroke || 'black',
+      strokeWidth: rectOptions.strokeWidth || 1,
+    });
+  
+    const text = new Textbox(label, {
+      width,
+      height,
+      left: width / 2,
+      top: height / 2,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 16,
+      fill: 'white',
+      textAlign: 'center',
+    });
+  
+    super([rect, text], {
+      left: rectOptions.left,
+      top: rectOptions.top,
       selectable: true,
       hasControls: true,
       hasBorders: true,
-      objectCaching: false,
     });
+  
+    this.label = label;
+    this.roomNumber = rectOptions.roomNumber;
   }
 
-  toObject(propertiesToInclude?: string[]) {
+  toObject<
+    T extends Omit<Props & TClassProperties<this>, keyof SProps>,
+    K extends keyof T = never
+  >(propertiesToInclude: K[] = []): Pick<T, K> & SProps {
     return {
-      ...super.toObject(propertiesToInclude),
-      type: Room.type,
+      ...super.toObject([...propertiesToInclude, 'label', 'roomNumber']),
+      label: this.label,
+      roomNumber: this.roomNumber,
     };
   }
 
-  static fromObject(object: RoomSerializedProps, callback: (room: Room) => void) {
-    const objects = object.objects;
-    if (!Array.isArray(objects)) {
-      throw new Error("Invalid objects array for Room.");
-    }
-    callback(new Room(objects, object));
+  static async fromObject(object: SerializedRoomProps): Promise<Room> {
+    const {
+      label = '',
+      roomNumber,
+      left = 0,
+      top = 0,
+      width = 100,
+      height = 100,
+      stroke,
+      strokeWidth,
+      fill,
+      ...rest
+    } = object;
+  
+    return new Room(label, {
+      left,
+      top,
+      width,
+      height,
+      roomNumber,
+      stroke,
+      strokeWidth,
+      fill,
+    });
   }
 }
 
-classRegistry.setClass(Room);
-classRegistry.setSVGClass(Room);
+classRegistry.setClass(Room, 'room');
+classRegistry.setSVGClass(Room, 'room');

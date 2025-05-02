@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import * as fabric from "fabric";
-import { createWall } from "@/components/constructor/objects/Wall";
-import { createDoor } from "@/components/constructor/objects/Door";
-import { createRoom } from "@/components/constructor/objects/Room";
-import { createStairs } from "@/components/constructor/objects/Stairs";
-import { createPoint } from "@/components/constructor/objects/Point";
+
+import { createWall } from "@/components/constructor/factories/createWall";
+import { createDoor } from "@/components/constructor/factories/createDoor";
+import { createRoom } from "@/components/constructor/factories/createRoom";
+import { createPoint } from "@/components/constructor/factories/createPoint";
+import { createStairs } from "@/components/constructor/factories/createStairs";
+
 import { updateStore, snapToGrid } from "../utils/canvasUtils";
 import { useCanvasStore } from "../stores/useCanvasStore";
 import { useHistoryStore } from "../stores/useHistoryStore";
@@ -41,34 +43,8 @@ export const useDrawingTool = ({
   const objectFactories = {
     wall: (x, y) => createWall(x, y, x, y),
     door: (x, y) => createDoor(x, y, x, y),
-    roomTemp: (x, y) =>
-      new fabric.Rect({
-        left: x,
-        top: y,
-        width: 0,
-        height: 0,
-        fill: "rgba(0, 0, 255, 0.1)",
-        stroke: "blue",
-        strokeWidth: 2,
-        selectable: true,
-        hasControls: true,
-        hasBorders: true,
-        objectCaching: false,
-      }),
-    stairTemp: (x, y) =>
-      new fabric.Rect({
-        left: x,
-        top: y,
-        width: 0,
-        height: 0,
-        fill: "rgba(255,165,0,0.2)",
-        stroke: "orange",
-        strokeWidth: 2,
-        selectable: true,
-        hasControls: true,
-        hasBorders: true,
-        objectCaching: false,
-      }),
+    room: (x, y) => createRoom(x, y, 0, 0),
+    stair: (x, y) => createStairs(x, y, 0, 0, [1, 2]),
     point: (x, y) => createPoint(x, y),
   };
 
@@ -80,17 +56,10 @@ export const useDrawingTool = ({
       const { x, y } = getSnappedPointer(canvas, e);
       setStartPos({ x, y });
 
-      let obj = null;
-      if (activeTool === "wall" || activeTool === "door") {
-        obj = objectFactories[activeTool](x, y);
-      } else if (activeTool === "room") {
-        obj = objectFactories.roomTemp(x, y);
-      } else if (activeTool === "stair") {
-        obj = objectFactories.stairTemp(x, y);
-      } else if (activeTool === "point") {
-        obj = objectFactories.point(x, y);
-      }
+      const factory = objectFactories[activeTool];
+      if (!factory) return;
 
+      const obj = factory(x, y);
       if (obj) {
         canvas.add(obj);
         canvas.setActiveObject(obj);
@@ -99,23 +68,7 @@ export const useDrawingTool = ({
       }
     };
 
-    const endDraw = (e) => {
-      if (!currentObj || !startPos) return;
-
-      const { x, y } = getSnappedPointer(canvas, e);
-      const width = Math.abs(x - startPos.x);
-      const height = Math.abs(y - startPos.y);
-      canvas.remove(currentObj);
-
-      const left = Math.min(startPos.x, x);
-      const top = Math.min(startPos.y, y);
-
-      if (activeTool === "room") {
-        canvas.add(createRoom(left, top, width, height));
-      } else if (activeTool === "stair") {
-        canvas.add(createStairs(left, top, width, height, 1, 2));
-      }
-
+    const endDraw = () => {
       resetDrawing();
       updateStore(canvas, setObjects, saveHistory, currentFloorId);
     };
@@ -124,25 +77,37 @@ export const useDrawingTool = ({
       if (!isDrawing) {
         beginDraw(e);
       } else {
-        endDraw(e);
+        endDraw();
       }
     };
 
     const handleMouseMove = (e) => {
-      if (!isDrawing || !currentObj || !startPos) return;
+      const canvas = fabricCanvasRef.current;
+      if (!isDrawing || !currentObj || !startPos || !canvas) return;
 
       const { x, y } = getSnappedPointer(canvas, e);
 
       if (currentObj instanceof fabric.Line) {
         currentObj.set({ x2: x, y2: y });
-      } else if (currentObj instanceof fabric.Rect) {
+      } else if (currentObj.type === "group") {
+        const group = currentObj as fabric.Group;
+        const rect = group.item(0) as fabric.Rect;
+        const text = group.item(1) as fabric.Textbox;
+
         const width = Math.abs(x - startPos.x);
         const height = Math.abs(y - startPos.y);
-        currentObj.set({
-          width,
-          height,
+
+        rect.set({ width, height });
+        group.set({
           left: Math.min(startPos.x, x),
           top: Math.min(startPos.y, y),
+        });
+
+        text.set({
+          left: width / 2,
+          top: height / 2,
+          width,
+          height,
         });
       }
 

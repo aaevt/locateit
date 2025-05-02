@@ -27,6 +27,64 @@ export const useObjectTransform = (
     saveToStorage({ [currentFloorId]: json });
   };
 
+  const snapObjectPosition = (obj: fabric.Object) => {
+    obj.left = snapToGrid(obj.left ?? 0);
+    obj.top = snapToGrid(obj.top ?? 0);
+    obj.setCoords();
+  };
+
+  const handleGroupScaling = (group: fabric.Group) => {
+    const rect = group.item(0) as fabric.Rect;
+    const text = group.item(1) as fabric.Textbox;
+
+    const newWidth = snapToGrid((rect.width ?? 0) * (group.scaleX ?? 1));
+    const newHeight = snapToGrid((rect.height ?? 0) * (group.scaleY ?? 1));
+
+    rect.set({ width: newWidth, height: newHeight });
+    text?.set({
+      left: newWidth / 2,
+      top: newHeight / 2,
+      width: newWidth,
+      height: newHeight,
+    });
+
+    group.set({ scaleX: 1, scaleY: 1 });
+    snapObjectPosition(group);
+  };
+
+  const handleLineScaling = (line: fabric.Line) => {
+    const newX2 = snapToGrid((line.x2 ?? 0) * (line.scaleX ?? 1));
+    const newY2 = snapToGrid((line.y2 ?? 0) * (line.scaleY ?? 1));
+
+    const newX1 = snapToGrid((line.x1 ?? 0));
+    const newY1 = snapToGrid((line.y1 ?? 0));
+
+    line.set({
+      x1: newX1,
+      y1: newY1,
+      x2: newX2,
+      y2: newY2,
+      scaleX: 1,
+      scaleY: 1,
+    });
+
+    snapObjectPosition(line);
+  };
+
+  const handleGenericScaling = (obj: fabric.Object) => {
+    const newWidth = snapToGrid((obj.width ?? 0) * (obj.scaleX ?? 1));
+    const newHeight = snapToGrid((obj.height ?? 0) * (obj.scaleY ?? 1));
+
+    obj.set({
+      width: newWidth,
+      height: newHeight,
+      scaleX: 1,
+      scaleY: 1,
+    });
+
+    snapObjectPosition(obj);
+  };
+
   useEffect(() => {
     const canvas = fabricCanvas.current;
     if (!canvas) return;
@@ -34,9 +92,10 @@ export const useObjectTransform = (
     const handleObjectMoving = (e: FabricEvent) => {
       const obj = e.target;
       if (!obj) return;
-      obj.left = snapToGrid(obj.left ?? 0);
-      obj.top = snapToGrid(obj.top ?? 0);
+
+      snapObjectPosition(obj);
       updateStore();
+      canvas.requestRenderAll();
     };
 
     const handleObjectScaling = (e: FabricEvent) => {
@@ -44,34 +103,11 @@ export const useObjectTransform = (
       if (!obj) return;
 
       if (obj.type === "group") {
-        const group = obj as fabric.Group;
-        const rect = group.item(0) as fabric.Rect;
-        const text = group.item(1) as fabric.Textbox;
-        if (rect) {
-          const newWidth = snapToGrid((rect.width ?? 0) * (group.scaleX ?? 1));
-          const newHeight = snapToGrid((rect.height ?? 0) * (group.scaleY ?? 1));
-          rect.set({ width: newWidth, height: newHeight });
-          text?.set({ left: newWidth / 2, top: newHeight / 2, width: newWidth, height: newHeight });
-          group.scaleX = 1;
-          group.scaleY = 1;
-          group.setCoords();
-        }
+        handleGroupScaling(obj as fabric.Group);
       } else if (obj.type === "line") {
-        const line = obj as fabric.Line;
-        line.set({
-          x2: snapToGrid((line.x2 ?? 0) * (line.scaleX ?? 1)),
-          y2: snapToGrid((line.y2 ?? 0) * (line.scaleY ?? 1)),
-        });
-        line.scaleX = 1;
-        line.scaleY = 1;
-        line.setCoords();
+        handleLineScaling(obj as fabric.Line);
       } else {
-        const newWidth = snapToGrid((obj.width ?? 0) * (obj.scaleX ?? 1));
-        const newHeight = snapToGrid((obj.height ?? 0) * (obj.scaleY ?? 1));
-        obj.set({ width: newWidth, height: newHeight });
-        obj.scaleX = 1;
-        obj.scaleY = 1;
-        obj.setCoords();
+        handleGenericScaling(obj);
       }
 
       updateStore();
@@ -81,10 +117,22 @@ export const useObjectTransform = (
     const handleObjectRotating = (e: FabricEvent) => {
       const obj = e.target;
       if (!obj) return;
-      obj.angle = Math.round((obj.angle ?? 0) / 45) * 45;
+    
+      // Зафиксировать угол на ближайший шаг (например, 45°)
+      const originalCenter = obj.getCenterPoint();
+    
+      const roundedAngle = Math.round((obj.angle ?? 0) / 45) * 45;
+      obj.rotate(roundedAngle);
+    
+      // Возвращаем объект в исходный центр после поворота
+      obj.setPositionByOrigin(originalCenter, 'center', 'center');
+      obj.setCoords();
+    
       updateStore();
-      canvas.requestRenderAll();
+      fabricCanvas.current?.requestRenderAll();
     };
+    
+    
 
     canvas.on("object:moving", handleObjectMoving);
     canvas.on("object:scaling", handleObjectScaling);

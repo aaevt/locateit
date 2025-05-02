@@ -1,39 +1,105 @@
-import { Group, classRegistry, IGroupOptions, Object as FabricObject } from "fabric";
-
-type StairsSerializedProps = IGroupOptions & {
-  type: "stairs";
-  objects: FabricObject[];
-};
-
-export class Stairs extends Group {
-  static type = "stairs";
-
-  constructor(objects: FabricObject[], options: IGroupOptions = {}) {
-    super(objects, {
-      ...options,
-      type: Stairs.type,
-      selectable: true,
-      hasControls: true,
-      hasBorders: true,
-      objectCaching: false,
-    });
+import {
+    Group,
+    Rect,
+    Textbox,
+    classRegistry,
+    type SerializedGroupProps,
+    type RectProps,
+  } from 'fabric';
+  
+  interface StairsExtraProps {
+    label?: string;
+    floors?: number[];
   }
-
-  toObject(propertiesToInclude?: string[]) {
-    return {
-      ...super.toObject(propertiesToInclude),
-      type: Stairs.type,
-    };
-  }
-
-  static fromObject(object: StairsSerializedProps, callback: (stairs: Stairs) => void) {
-    const objects = object.objects;
-    if (!Array.isArray(objects)) {
-      throw new Error("Invalid objects array for Stairs.");
+  
+  export interface SerializedStairsProps extends SerializedGroupProps, StairsExtraProps {}
+  export interface StairsProps extends SerializedStairsProps {}
+  
+  export class Stairs extends Group {
+    static type = 'stairs';
+  
+    declare label?: string;
+    declare floors?: number[];
+  
+    constructor(
+      label: string = '',
+      rectOptions: Partial<RectProps> & { floors?: number[] } = {}
+    ) {
+      const width = rectOptions.width || 100;
+      const height = rectOptions.height || 60;
+      const floors = rectOptions.floors || [];
+  
+      const rect = new Rect({
+        width,
+        height,
+        fill: 'rgba(255, 165, 0, 0.4)',
+        stroke: rectOptions.stroke || 'orange',
+        strokeWidth: rectOptions.strokeWidth || 1,
+      });
+  
+      const labelText = floors.length > 0 ? `Floors: ${floors.join(', ')}` : label;
+  
+      const text = new Textbox(labelText, {
+        width,
+        height,
+        left: width / 2,
+        top: height / 2,
+        originX: 'center',
+        originY: 'center',
+        fontSize: 14,
+        fill: 'black',
+        textAlign: 'center',
+        editable: false,
+      });
+  
+      super([rect, text], {
+        left: rectOptions.left,
+        top: rectOptions.top,
+        selectable: true,
+        hasControls: true,
+        hasBorders: true,
+      });
+  
+      this.label = label;
+      this.floors = floors;
     }
-    callback(new Stairs(objects, object));
+  
+    override toObject(propertiesToInclude: string[] = []): SerializedStairsProps {
+      return {
+        ...super.toObject([...propertiesToInclude, 'label', 'floors']),
+        label: this.label,
+        floors: this.floors,
+      };
+    }
+  
+    static async fromObject(object: SerializedStairsProps): Promise<Stairs> {
+      const {
+        label = '',
+        floors = [],
+        left = 0,
+        top = 0,
+        width = 100,
+        height = 60,
+        stroke,
+        strokeWidth,
+        fill,
+        ...rest
+      } = object;
+  
+      return new Stairs(label, {
+        left,
+        top,
+        width,
+        height,
+        stroke,
+        strokeWidth,
+        fill,
+        floors,
+        ...rest,
+      });
+    }
   }
-}
-
-classRegistry.setClass(Stairs);
-classRegistry.setSVGClass(Stairs);
+  
+  classRegistry.setClass(Stairs, 'stairs');
+  
+  classRegistry.setSVGClass(Stairs, 'stairs');

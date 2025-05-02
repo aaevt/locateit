@@ -16,6 +16,7 @@ export const useCopyPaste = (fabricCanvasRef, updateStore) => {
       if (!canvas) return;
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+        console.log(1);
         const activeObject = canvas.getActiveObject();
         if (activeObject) {
           e.preventDefault();

@@ -4,12 +4,13 @@ import { useActiveToolStore } from "../stores/useActiveToolStore";
 import { useCanvasStore } from "../stores/useCanvasStore";
 import { useHistoryStore } from "../stores/useHistoryStore";
 import { useFloorStore } from "../stores/useFloorStore";
-import { createWall } from "../objects/Wall";
-import { createDoor } from "../objects/Door";
-import { createRoom } from "../objects/Room";
-import { createStairs } from "../objects/Stairs";
-import { createPoint } from "../objects/Point";
+import { createWall } from "../factories/createWall";
+import { createDoor } from "../factories/createDoor";
+import { createRoom } from "../factories/createRoom";
+import { createPoint } from "../factories/createPoint";
+import { createStairs } from "../factories/createStairs";
 import { updateStore } from "../utils/canvasUtils";
+import { Room } from "../classes/Room";
 
 type FabricEvent = fabric.TEvent<Event> & {
   e: MouseEvent | TouchEvent;
