@@ -1,9 +1,9 @@
 import { create } from "zustand";
-import { CanvasObject } from "@/components/constructor/types/canvas";
+import * as fabric from "fabric";
 
-interface useCanvasState {
-  objects: CanvasObject[];
-  setObjects: (objects: CanvasObject[]) => void;
+interface CanvasState {
+  objects: fabric.Object[];
+  setObjects: (objects: fabric.Object[]) => void;
 }
 
 export const useCanvasStore = create<CanvasState>((set) => ({
