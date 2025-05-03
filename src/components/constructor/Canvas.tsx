@@ -44,15 +44,24 @@ export default function Canvas() {
 
     const maxPanX = (canvasWidthScaled - containerWidth) / 2;
     const minPanX = -(canvasWidthScaled - containerWidth) / 2;
-
-    if (vpt[4] > maxPanX) vpt[4] = maxPanX;
-    if (vpt[4] < minPanX) vpt[4] = minPanX;
-
+    
     const maxPanY = (canvasHeightScaled - containerHeight) / 2;
     const minPanY = -(canvasHeightScaled - containerHeight) / 2;
 
-    if (vpt[5] > maxPanY) vpt[5] = maxPanY;
-    if (vpt[5] < minPanY) vpt[5] = minPanY;
+    if (canvasWidthScaled < containerWidth) {
+      vpt[4] = (containerWidth - canvasWidthScaled) / 2;
+    } else {
+      const rightEdgeOffset = 10;
+      vpt[4] = Math.min(maxPanX + rightEdgeOffset, Math.max(minPanX, vpt[4]));
+    }
+
+    if (canvasHeightScaled < containerHeight) {
+      vpt[5] = (containerHeight - canvasHeightScaled) / 2;
+    } else {
+      vpt[5] = Math.min(maxPanY, Math.max(minPanY, vpt[5]));
+    }
+
+    canvas.setViewportTransform(vpt);
   };
 
   useCanvasSetup(
