@@ -14,7 +14,7 @@ const ConstructorPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black">
       <Header />
-      <div className="flex flex-col p-20 overflow-hidden">
+      <div className="flex flex-col flex-grow p-20 overflow-hidden">
         <div className="flex flew-row justify-center">
         <Toolbar />
 

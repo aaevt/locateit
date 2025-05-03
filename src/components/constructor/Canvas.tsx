@@ -23,11 +23,17 @@ export default function Canvas() {
   const MIN_ZOOM = 1;
   const MAX_ZOOM = 2;
 
-  const { gridSize, backgroundColor, canvasWidth, canvasHeight, open } =
-    useCanvasSettingsStore();
+  const {
+    gridSize,
+    backgroundColor,
+    canvasWidth,
+    canvasHeight,
+    backgroundImage,
+    backgroundOpacity,
+    showGrid,
+    open,
+  } = useCanvasSettingsStore();
   const { setCanvas } = useCanvasStore();
-
-  const [showGrid, setShowGrid] = useState(true);
 
   const limitPan = () => {
     if (!fabricCanvas.current) return;
@@ -64,15 +70,40 @@ export default function Canvas() {
     canvas.setViewportTransform(vpt);
   };
 
+  useEffect(() => {
+    if (fabricCanvas.current) {
+      fabricCanvas.current.setBackgroundColor(backgroundColor, () => {
+        fabricCanvas.current?.requestRenderAll();
+      });
+
+      if (backgroundImage) {
+        fabric.Image.fromURL(backgroundImage, (img) => {
+          img.set({
+            opacity: backgroundOpacity,
+            selectable: false,
+            evented: false,
+          });
+          fabricCanvas.current?.setBackgroundImage(img, () => {
+            fabricCanvas.current?.requestRenderAll();
+          });
+        });
+      } else {
+        fabricCanvas.current.setBackgroundImage(null, () => {
+          fabricCanvas.current?.requestRenderAll();
+        });
+      }
+    }
+  }, [backgroundColor, backgroundImage, backgroundOpacity]);
+
   useCanvasSetup(
-    canvasRef as React.RefObject<HTMLCanvasElement>,
+    canvasRef,
     fabricCanvas,
     backgroundColor,
     canvasWidth,
     canvasHeight,
   );
   const { drawGrid } = useCanvasGrid(
-    gridRef as React.RefObject<HTMLCanvasElement>,
+    gridRef,
     fabricCanvas,
     showGrid,
     gridSize,
