@@ -19,7 +19,6 @@ const ConstructorPage: React.FC = () => {
       <div className="flex flex-1 pt-20 overflow-hidden">
         <div className="flex flex-col h-full px-4 gap-4">
           <Shapesbar />
-          <Layersbar />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex items-center justify-center p-4">

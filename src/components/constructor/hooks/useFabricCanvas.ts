@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useCanvasSettingsStore } from "@/components/constructor/stores/useCanvasSettingsStore";
 import { useFloorStore } from "@/components/constructor/stores/useFloorStore";
 import { loadFromStorage } from "@/components/constructor/libs/localStorage";
-import * as fabric from "fabric";
+import { Canvas } from "fabric";
 
 export const useFabricCanvas = (canvasRef, setFabricCanvas) => {
   const { backgroundColor, canvasWidth, canvasHeight, open } =
@@ -12,7 +12,11 @@ export const useFabricCanvas = (canvasRef, setFabricCanvas) => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const canvas = new fabric.Canvas(canvasRef.current, {
+    if (setFabricCanvas.current) {
+      setFabricCanvas.current.dispose();
+    }
+
+    const canvas = new Canvas(canvasRef.current, {
       backgroundColor,
       width: canvasWidth,
       height: canvasHeight,
@@ -35,5 +39,13 @@ export const useFabricCanvas = (canvasRef, setFabricCanvas) => {
       canvas.dispose();
       setFabricCanvas(null);
     };
-  }, [canvasRef, currentFloorId, backgroundColor, canvasWidth, canvasHeight]);
+  }, [
+    canvasRef,
+    currentFloorId,
+    backgroundColor,
+    canvasWidth,
+    canvasHeight,
+    open,
+    setFabricCanvas,
+  ]);
 };

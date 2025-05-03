@@ -10,13 +10,15 @@ import { useObjectTransform } from "./hooks/useObjectTransform";
 import { useCanvasTools } from "./hooks/useCanvasTools";
 import { useCanvasGrid } from "./hooks/useCanvasGrid";
 import { useCanvasStore } from "./stores/useCanvasStore";
+import { useFloorStore } from "./stores/useFloorStore";
+import { useFloorCanvasManager } from "./hooks/useFloorCanvasManager";
 import ZoomControls from "./ZoomControls";
 import CanvasSettings from "./CanvasSettings";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gridRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvas = useRef<fabric.Canvas | null>(null);
+  const { fabricCanvas } = useFloorCanvasManager(canvasRef);
   const [zoom, setZoom] = useState(1);
   const MIN_ZOOM = 1;
   const MAX_ZOOM = 2;

@@ -1,25 +1,73 @@
 import { create } from "zustand";
+import { nanoid } from "nanoid";
+import { persist } from "zustand/middleware";
+import { Canvas } from "fabric";
+import { Floor } from "../types/floor";
 
-interface Floor {
-  id: number;
-  name: string;
-}
-
-interface FloorState {
+type FloorStore = {
   floors: Floor[];
-  currentFloorId: number;
-  addFloor: (floor: Floor) => void;
-  switchFloor: (id: number) => void;
-}
+  currentFloorId: string | null;
+  setCurrentFloor: (id: string) => void;
+  saveCurrentFloorJson: (json: Canvas) => void;
+  addFloor: () => void;
+  removeFloor: (id: string) => void;
+  moveFloor: (fromIndex: number, toIndex: number) => void;
+};
 
-export const useFloorStore = create<FloorState>((set) => ({
-  floors: [{ id: 1, name: "Этаж 1" }],
-  currentFloorId: 1,
+export const useFloorStore = create<FloorStore>()(
+  persist(
+    (set, get) => ({
+      floors: [],
+      currentFloorId: null,
+      setCurrentFloor: (id) => set({ currentFloorId: id }),
 
-  addFloor: (floor) =>
-    set((state) => ({
-      floors: [...state.floors, floor],
-    })),
+      saveCurrentFloorJson: (json) => {
+        const { currentFloorId, floors } = get();
+        if (!currentFloorId) return;
+        set({
+          floors: floors.map((f) =>
+            f.id === currentFloorId ? { ...f, canvasJson: json } : f,
+          ),
+        });
+      },
 
-  switchFloor: (id) => set({ currentFloorId: id }),
-}));
+      addFloor: () => {
+        const newId = nanoid();
+        const newFloor: Floor = {
+          id: newId,
+          number: get().floors.length > 0 ? get().floors.length + 1 : 1,
+          canvasJson: null,
+        };
+        set((state) => ({
+          floors: [...state.floors, newFloor],
+          currentFloorId: state.floors.length === 0 ? newId : state.currentFloorId,
+        }));
+      },
+
+      removeFloor: (id) => {
+        set((state) => {
+          const remaining = state.floors.filter((f) => f.id !== id);
+          return {
+            floors: remaining,
+            currentFloorId:
+              state.currentFloorId === id
+                ? remaining[0]?.id || null
+                : state.currentFloorId,
+          };
+        });
+      },
+
+      moveFloor: (fromIndex, toIndex) => {
+        set((state) => {
+          const updated = [...state.floors];
+          const [moved] = updated.splice(fromIndex, 1);
+          updated.splice(toIndex, 0, moved);
+          return { floors: updated };
+        });
+      },
+    }),
+    {
+      name: "floor-store",
+    },
+  ),
+);
