@@ -41,24 +41,24 @@ export default function Shapesbar() {
 
   return (
     <TooltipProvider>
-      <div className="h-full w-[300px] bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border z-40 transition-all duration-300">
+      <div className="h-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border z-40 transition-all duration-300">
         <Tabs defaultValue="forms" className="w-full h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="forms">Формы</TabsTrigger>
             <TabsTrigger value="history">История</TabsTrigger>
           </TabsList>
           <TabsContent value="forms" className="mt-4 flex-1">
-            <div className="flex flex-col items-center gap-4 h-full">
+            <div className="flex flex-col items-start gap-3 h-full">
               {tools.map(({ tool, icon, label }) => (
                 <Tooltip key={tool}>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
                       variant={activeTool === tool ? "default" : "ghost"}
                       onClick={() => setActiveTool(tool)}
-                      className="transition-all duration-300"
+                      className="w-full justify-start gap-2"
                     >
                       {icon}
+                      <span>{label}</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center">

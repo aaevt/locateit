@@ -11,6 +11,7 @@ import { useCanvasTools } from "./hooks/useCanvasTools";
 import { useCanvasGrid } from "./hooks/useCanvasGrid";
 import { useCanvasStore } from "./stores/useCanvasStore";
 import ZoomControls from "./ZoomControls";
+import CanvasSettings from "./CanvasSettings";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,21 +53,26 @@ export default function Canvas() {
     if (vpt[5] < minPanY) vpt[5] = minPanY;
   };
 
-  useCanvasSetup(canvasRef as React.RefObject<HTMLCanvasElement>, fabricCanvas, backgroundColor, canvasWidth, canvasHeight);
+  useCanvasSetup(
+    canvasRef as React.RefObject<HTMLCanvasElement>,
+    fabricCanvas,
+    backgroundColor,
+    canvasWidth,
+    canvasHeight,
+  );
   const { drawGrid } = useCanvasGrid(
     gridRef as React.RefObject<HTMLCanvasElement>,
     fabricCanvas,
     showGrid,
     gridSize,
     canvasWidth,
-    canvasHeight
+    canvasHeight,
   );
   useCanvasZoom(fabricCanvas, drawGrid, limitPan, zoom, setZoom);
   useCanvasPan(fabricCanvas, drawGrid, limitPan);
   useObjectTransform(fabricCanvas, gridSize);
-  useCanvasTools(fabricCanvas, gridSize);
+  useCanvasTools(fabricCanvas, gridSize, limitPan, drawGrid, zoom, setZoom);
 
-  // Устанавливаем canvas в store после инициализации
   useEffect(() => {
     if (fabricCanvas.current) {
       setCanvas(fabricCanvas.current);
@@ -104,6 +110,7 @@ export default function Canvas() {
           drawGrid={drawGrid}
         />
       </div>
+      <CanvasSettings />
     </div>
   );
 }

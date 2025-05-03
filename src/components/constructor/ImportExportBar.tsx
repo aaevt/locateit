@@ -1,37 +1,69 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Upload } from "lucide-react";
+import { Upload, Download } from "lucide-react";
+import { useCanvasStore } from "./stores/useCanvasStore";
+import { useFloorStore } from "./stores/useFloorStore";
 import ExportModal from "./ExportModal";
 
 export default function ImportExportBar() {
+  const { canvas } = useCanvasStore();
+  const { currentFloorId } = useFloorStore();
+
   const handleImport = () => {
-    // TODO: Implement import functionality
-    console.log("Import clicked");
+    if (!canvas) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          canvas.loadFromJSON(data, () => {
+            canvas.renderAll();
+            // Сохраняем после успешного импорта
+            const jsonData = canvas.toJSON();
+            localStorage.setItem(`floor_${currentFloorId}`, JSON.stringify(jsonData));
+          });
+        } catch (error) {
+          console.error("Error importing file:", error);
+          alert("Ошибка при импорте файла. Пожалуйста, убедитесь, что файл корректный.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   };
 
   return (
-    <TooltipProvider>
-      <div className="w-full h-12 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border z-40 transition-all duration-300">
-        <div className="flex items-center justify-end gap-4 h-full">
-          <Button
-            variant="ghost"
-            onClick={handleImport}
-            className="transition-all duration-300"
-          >
-            <Upload className="h-5 w-5 mr-2" />
-            Импортировать
-          </Button>
-
-          <ExportModal />
-        </div>
-      </div>
-    </TooltipProvider>
+    <div className="flex items-center justify-end gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          const modalTrigger = document.querySelector('[data-export-modal-trigger]');
+          if (modalTrigger) {
+            (modalTrigger as HTMLElement).click();
+          }
+        }}
+        className="flex items-center gap-1"
+      >
+        <Download className="h-4 w-4" />
+        <span className="hidden sm:inline">Экспорт</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleImport}
+        className="flex items-center gap-1"
+      >
+        <Upload className="h-4 w-4" />
+        <span className="hidden sm:inline">Импорт</span>
+      </Button>
+      <ExportModal />
+    </div>
   );
 } 

@@ -37,8 +37,6 @@ export default function ExportModal() {
           }
         });
         
-        console.log("Generated SVG:", svg);
-        
         // Создаем SVG файл
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const svgUrl = URL.createObjectURL(svgBlob);
@@ -55,8 +53,6 @@ export default function ExportModal() {
         // Экспорт в JSON
         const json = canvas.toJSON(['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']);
         
-        console.log("Generated JSON:", json);
-        
         // Создаем JSON файл
         const jsonBlob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
         const jsonUrl = URL.createObjectURL(jsonBlob);
@@ -72,6 +68,7 @@ export default function ExportModal() {
       }
     } catch (error) {
       console.error("Export error:", error);
+      alert("Ошибка при экспорте файла. Пожалуйста, попробуйте еще раз.");
     }
   };
 
@@ -83,7 +80,6 @@ export default function ExportModal() {
 
     try {
       const json = canvas.toJSON(['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']);
-      console.log("Generated JSON for embed:", json);
       const base64 = btoa(JSON.stringify(json));
       const embedCode = `<iframe 
         src="/viewer?data=${base64}" 
@@ -96,6 +92,7 @@ export default function ExportModal() {
       setEmbedCode(embedCode);
     } catch (error) {
       console.error("Embed code generation error:", error);
+      alert("Ошибка при генерации кода для вставки. Пожалуйста, попробуйте еще раз.");
     }
   };
 
@@ -110,13 +107,18 @@ export default function ExportModal() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Save embed code error:", error);
+      alert("Ошибка при сохранении кода для вставки. Пожалуйста, попробуйте еще раз.");
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="transition-all duration-300">
+        <Button 
+          variant="ghost" 
+          className="hidden" 
+          data-export-modal-trigger
+        >
           <Download className="h-5 w-5 mr-2" />
           Экспортировать
         </Button>
@@ -195,6 +197,13 @@ export default function ExportModal() {
                     className="w-full"
                   >
                     Сгенерировать
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={saveEmbedCode}
+                    className="w-full"
+                  >
+                    Сохранить код
                   </Button>
                 </div>
               </div>

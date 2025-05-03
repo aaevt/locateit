@@ -10,7 +10,6 @@ import { createRoom } from "../factories/createRoom";
 import { createPoint } from "../factories/createPoint";
 import { createStairs } from "../factories/createStairs";
 import { updateStore } from "../utils/canvasUtils";
-import { Room } from "../classes/Room";
 
 type FabricEvent = fabric.TEvent<Event> & {
   e: MouseEvent | TouchEvent;
@@ -23,7 +22,7 @@ export const useCanvasTools = (
   limitPan: () => void,
   drawGrid: () => void,
   zoom: number,
-  setZoom: (zoom: number) => void
+  setZoom: (zoom: number) => void,
 ) => {
   const { activeTool } = useActiveToolStore();
   const { setObjects } = useCanvasStore();
@@ -33,7 +32,7 @@ export const useCanvasTools = (
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentObj, setCurrentObj] = useState<fabric.Object | null>(null);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
-    null
+    null,
   );
 
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
@@ -68,19 +67,20 @@ export const useCanvasTools = (
       const canvas = fabricCanvas.current;
       if (!canvas) return;
 
+      // Удаление
       if (activeTool === "delete" && e.target) {
-        const objectsToRemove =
+        const targets =
           canvas.getActiveObjects().length > 0
             ? canvas.getActiveObjects()
             : [e.target];
-
-        objectsToRemove.forEach((obj) => obj && canvas.remove(obj));
+        targets.forEach((obj) => canvas.remove(obj));
         canvas.discardActiveObject();
         canvas.requestRenderAll();
         updateStore(canvas, setObjects, saveHistory, currentFloorId);
         return;
       }
 
+      // Выделение
       if (activeTool === "none" && e.target) {
         canvas.setActiveObject(e.target);
         return;
@@ -88,65 +88,92 @@ export const useCanvasTools = (
 
       const { x, y } = getSnappedPointer(e);
 
+      // Однокликовая точка
+      if (activeTool === "point") {
+        const point = createPoint(x, y);
+        canvas.add(point);
+        updateStore(canvas, setObjects, saveHistory, currentFloorId);
+        return;
+      }
+
+      // Первый клик
       if (!isDrawing) {
         setStartPos({ x, y });
 
-        const objectFactories = {
-          wall: () => createWall(x, y, x, y),
-          door: () => createDoor(x, y, x, y),
-          room: () => createRoom(x, y, 0, 0),
-          stair: () => createStairs(x, y, 0, 0, 1, 2),
-          point: () => createPoint(x, y),
-        };
+        let tempObj: fabric.Object | null = null;
 
-        const factory =
-          objectFactories[activeTool as keyof typeof objectFactories];
-        const obj = factory?.();
+        if (activeTool === "wall" || activeTool === "door") {
+          tempObj = new fabric.Line([x, y, x, y], {
+            stroke: "black",
+            strokeWidth: 2,
+            selectable: false,
+            evented: false,
+          });
+        } else if (activeTool === "room" || activeTool === "stair") {
+          tempObj = new fabric.Rect({
+            left: x,
+            top: y,
+            width: 0,
+            height: 0,
+            fill: "rgba(0,0,0,0.05)",
+            stroke: "#999",
+            strokeDashArray: [4, 4],
+            strokeWidth: 1,
+            selectable: false,
+            evented: false,
+          });
+        }
 
-        if (obj) {
-          canvas.add(obj);
-          canvas.setActiveObject(obj);
-          setCurrentObj(obj);
+        if (tempObj) {
+          canvas.add(tempObj);
+          setCurrentObj(tempObj);
           setIsDrawing(true);
         }
       } else {
+        // Второй клик: финальное создание
+        if (!startPos || !currentObj) return;
+
+        const { x: startX, y: startY } = startPos;
+        const left = Math.min(startX, x);
+        const top = Math.min(startY, y);
+        const width = Math.abs(x - startX);
+        const height = Math.abs(y - startY);
+
+        canvas.remove(currentObj);
+
+        if (activeTool === "wall") {
+          canvas.add(createWall(startX, startY, x, y));
+        } else if (activeTool === "door") {
+          canvas.add(createDoor(startX, startY, x, y));
+        } else if (activeTool === "room") {
+          canvas.add(createRoom(left, top, width, height));
+        } else if (activeTool === "stair") {
+          canvas.add(createStairs(left, top, width, height, [1, 2]));
+        }
+
         resetDrawing();
+        updateStore(canvas, setObjects, saveHistory, currentFloorId);
       }
     };
 
     const handleMouseMove = (e: FabricEvent) => {
-      const canvas = fabricCanvas.current;
-      if (!isDrawing || !currentObj || !startPos || !canvas) return;
-
+      if (!isDrawing || !currentObj || !startPos) return;
       const { x, y } = getSnappedPointer(e);
 
       if (currentObj.type === "line") {
         (currentObj as fabric.Line).set({ x2: x, y2: y });
-      } else if (currentObj.type === "group") {
-        const group = currentObj as fabric.Group;
-        const rect = group.item(0) as fabric.Rect;
-        const text = group.item(1) as fabric.Textbox;
-
+      } else if (currentObj.type === "rect") {
         const width = Math.abs(x - startPos.x);
         const height = Math.abs(y - startPos.y);
-
-        rect.set({ width, height });
-        group.set({
+        currentObj.set({
           left: Math.min(startPos.x, x),
           top: Math.min(startPos.y, y),
+          width,
+          height,
         });
-
-        if (text) {
-          text.set({
-            left: width / 2,
-            top: height / 2,
-            width,
-            height,
-          });
-        }
       }
 
-      canvas.requestRenderAll();
+      fabricCanvas.current?.requestRenderAll();
     };
 
     canvas.on("mouse:down", handleMouseDown);

@@ -7,6 +7,8 @@ import Canvas from "@/components/constructor/Canvas";
 import Toolbar from "@/components/constructor/Toolbar";
 import Shapesbar from "@/components/constructor/Shapesbar";
 import Activebar from "@/components/constructor/Activebar";
+import Floorsbar from "@/components/constructor/Floorsbar";
+import Layersbar from "@/components/constructor/Layersbar";
 import ImportExportBar from "@/components/constructor/ImportExportBar";
 
 const ConstructorPage: React.FC = () => {
@@ -15,8 +17,9 @@ const ConstructorPage: React.FC = () => {
       <Header />
       <Toolbar />
       <div className="flex flex-1 pt-20 overflow-hidden">
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full px-4 gap-4">
           <Shapesbar />
+          <Layersbar />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex items-center justify-center p-4">
@@ -26,7 +29,8 @@ const ConstructorPage: React.FC = () => {
             <ImportExportBar />
           </div>
         </div>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full px-4 gap-4">
+          <Floorsbar />
           <Activebar />
         </div>
       </div>
