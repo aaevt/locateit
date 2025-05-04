@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect } from "react";
 import * as fabric from "fabric";
 import { useCanvasSettingsStore } from "./stores/useCanvasSettingsStore";
-import { useCanvasSetup } from "./hooks/useCanvasSetup";
 import { useCanvasZoom } from "./hooks/useCanvasZoom";
 import { useCanvasPan } from "./hooks/useCanvasPan";
 import { useObjectTransform } from "./hooks/useObjectTransform";
@@ -34,6 +33,7 @@ export default function Canvas() {
     open,
   } = useCanvasSettingsStore();
   const { setCanvas } = useCanvasStore();
+  const { floors, currentFloorId, saveCurrentFloorJson } = useFloorStore();
 
   const limitPan = () => {
     if (!fabricCanvas.current) return;
@@ -95,13 +95,6 @@ export default function Canvas() {
     }
   }, [backgroundColor, backgroundImage, backgroundOpacity]);
 
-  useCanvasSetup(
-    canvasRef,
-    fabricCanvas,
-    backgroundColor,
-    canvasWidth,
-    canvasHeight,
-  );
   const { drawGrid } = useCanvasGrid(
     gridRef,
     fabricCanvas,
@@ -123,6 +116,31 @@ export default function Canvas() {
       setCanvas(null);
     };
   }, [fabricCanvas.current]);
+
+  useEffect(() => {
+    if (fabricCanvas.current && currentFloorId) {
+      const currentFloor = floors.find((f) => f.id === currentFloorId);
+      if (currentFloor?.canvasJson) {
+        fabricCanvas.current.loadFromJSON(currentFloor.canvasJson, () => {
+          fabricCanvas.current?.renderAll();
+        });
+      }
+    }
+  }, [currentFloorId, floors, fabricCanvas]);
+
+  useEffect(() => {
+    const saveCanvasState = () => {
+      if (fabricCanvas.current && currentFloorId) {
+        const json = fabricCanvas.current.toJSON();
+        saveCurrentFloorJson(json);
+      }
+    };
+
+    window.addEventListener("beforeunload", saveCanvasState);
+    return () => {
+      window.removeEventListener("beforeunload", saveCanvasState);
+    };
+  }, [fabricCanvas, currentFloorId, saveCurrentFloorJson]);
 
   return (
     <div
