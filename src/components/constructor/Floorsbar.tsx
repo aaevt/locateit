@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { useFloorStore } from "@/components/constructor/stores/useFloorStore";
@@ -19,13 +20,21 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 function SortableFloorItem({ floor, currentFloorId }: any) {
-  const { setCurrentFloor, removeFloor } = useFloorStore();
+  const { setCurrentFloor, removeFloor, updateFloorName } = useFloorStore();
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: floor.id });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(floor.name || `Этаж ${floor.number}`);
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  const handleNameChange = () => {
+    updateFloorName(floor.id, newName);
+    setIsEditing(false);
   };
 
   return (
@@ -41,13 +50,28 @@ function SortableFloorItem({ floor, currentFloorId }: any) {
       <span {...attributes} {...listeners} className="cursor-grab">
         <GripVertical className="h-4 w-4 opacity-60" />
       </span>
-      <Button
-        variant="ghost"
-        className="flex-1 justify-start"
-        onClick={() => setCurrentFloor(floor.id)}
-      >
-        Этаж {floor.number}
-      </Button>
+      {isEditing ? (
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onBlur={handleNameChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleNameChange();
+          }}
+          className="flex-1 px-2 py-1 border rounded-md"
+          autoFocus
+        />
+      ) : (
+        <Button
+          variant="ghost"
+          className="flex-1 justify-start"
+          onClick={() => setCurrentFloor(floor.id)}
+          onDoubleClick={() => setIsEditing(true)}
+        >
+          {newName}
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -61,7 +85,7 @@ function SortableFloorItem({ floor, currentFloorId }: any) {
 }
 
 export default function Floorsbar() {
-  const { floors, currentFloorId, addFloor, moveFloor, setCurrentFloor } =
+  const { floors, currentFloorId, addFloor, moveFloor, setCurrentFloor, loadFloors } =
     useFloorStore();
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -76,6 +100,10 @@ export default function Floorsbar() {
       moveFloor(oldIndex, newIndex);
     }
   };
+
+  useEffect(() => {
+    loadFloors();
+  }, [loadFloors]);
 
   return (
     <div className="h-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border z-40 transition-all duration-300">

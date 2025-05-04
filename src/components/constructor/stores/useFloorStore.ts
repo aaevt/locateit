@@ -12,6 +12,8 @@ type FloorStore = {
   addFloor: () => void;
   removeFloor: (id: string) => void;
   moveFloor: (fromIndex: number, toIndex: number) => void;
+  updateFloorName: (id: string, name: string) => void;
+  loadFloors: () => void;
 };
 
 export const useFloorStore = create<FloorStore>()(
@@ -64,6 +66,21 @@ export const useFloorStore = create<FloorStore>()(
           updated.splice(toIndex, 0, moved);
           return { floors: updated };
         });
+      },
+
+      updateFloorName: (id, name) => {
+        set((state) => ({
+          floors: state.floors.map((floor) =>
+            floor.id === id ? { ...floor, name } : floor
+          ),
+        }));
+      },
+
+      loadFloors: () => {
+        const storedState = JSON.parse(localStorage.getItem("floor-store") || "{}");
+        if (storedState?.state?.floors) {
+          set({ floors: storedState.state.floors });
+        }
       },
     }),
     {
