@@ -43,10 +43,11 @@ export default function Shapesbar() {
     <TooltipProvider>
       <div className="h-full bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border z-40 transition-all duration-300">
         <Tabs defaultValue="forms" className="w-full h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="forms">Формы</TabsTrigger>
-            <TabsTrigger value="history">История</TabsTrigger>
-          </TabsList>
+        <h2 className="text-lg font-semibold">Этажи</h2>
+          {/* <TabsList className="grid w-full grid-cols-2"> */}
+            {/* <TabsTrigger value="forms">Формы</TabsTrigger> */}
+            {/* <TabsTrigger value="history">История</TabsTrigger> */}
+          {/* </TabsList> */}
           <TabsContent value="forms" className="mt-4 flex-1">
             <div className="flex flex-col items-start gap-3 h-full">
               {tools.map(({ tool, icon, label }) => (

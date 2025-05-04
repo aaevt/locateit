@@ -71,27 +71,23 @@ export default function Canvas() {
   };
 
   useEffect(() => {
-    if (fabricCanvas.current) {
-      fabricCanvas.current.setBackgroundColor(backgroundColor, () => {
-        fabricCanvas.current?.requestRenderAll();
+    const canvas = fabricCanvas.current;
+    if (!canvas) return;
+  
+    canvas.backgroundColor = backgroundColor;
+  
+    if (backgroundImage) {
+      fabric.Image.fromURL(backgroundImage, (img) => {
+        img.set({
+          opacity: backgroundOpacity,
+          selectable: false,
+          evented: false,
+        });
+        canvas.backgroundImage = img;
+        canvas.requestRenderAll();
       });
-
-      if (backgroundImage) {
-        fabric.Image.fromURL(backgroundImage, (img) => {
-          img.set({
-            opacity: backgroundOpacity,
-            selectable: false,
-            evented: false,
-          });
-          fabricCanvas.current?.setBackgroundImage(img, () => {
-            fabricCanvas.current?.requestRenderAll();
-          });
-        });
-      } else {
-        fabricCanvas.current.setBackgroundImage(null, () => {
-          fabricCanvas.current?.requestRenderAll();
-        });
-      }
+    } else {
+      canvas.requestRenderAll();
     }
   }, [backgroundColor, backgroundImage, backgroundOpacity]);
 
