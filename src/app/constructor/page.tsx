@@ -3,12 +3,12 @@
 import React from "react";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import Canvas from "@/components/constructor/Canvas";
-import Toolbar from "@/components/constructor/Toolbar";
-import Shapesbar from "@/components/constructor/Shapesbar";
-import Activebar from "@/components/constructor/Activebar";
-import Floorsbar from "@/components/constructor/Floorsbar";
-import ImportExportBar from "@/components/constructor/ImportExportBar";
+import Canvas from "@/app/constructor/components/Canvas";
+import Toolbar from "@/app/constructor/components/Toolbar";
+import Shapesbar from "@/app/constructor/components/Shapesbar";
+import Activebar from "@/app/constructor/components/Activebar";
+import Floorsbar from "@/app/constructor/components/Floorsbar";
+import ImportExportBar from "@/app/constructor/components/ImportExportBar";
 
 const ConstructorPage: React.FC = () => {
   return (
