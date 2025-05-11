@@ -15,7 +15,7 @@ export const useCanvasGrid = (
 
     if (!gridCanvas || !canvas) return;
 
-    const ctx = gridCanvas.getContext("2d");
+    const ctx = gridCanvas?.getContext("2d");
     if (!ctx) return;
 
     const zoom = canvas.getZoom();

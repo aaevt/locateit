@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCanvasSettingsStore } from "@/app/constructor/stores/useCanvasSettingsStore";
 import { useCanvasStore } from "@/app/constructor/stores/useCanvasStore";
 import { useForm } from "react-hook-form";
@@ -34,6 +34,7 @@ export default function CanvasSettings() {
   const { canvas } = useCanvasStore();
 
   const [imagePreview, setImagePreview] = useState<string | null>(backgroundImage);
+  const objectUrlRef = useRef<string | null>(null);
 
   const form = useForm({
     resolver: zodResolver(canvasSettingsSchema),
@@ -58,6 +59,7 @@ export default function CanvasSettings() {
       backgroundOpacity,
       showGrid,
     });
+    setImagePreview(backgroundImage);
   }, [
     gridSize,
     backgroundColor,
@@ -70,7 +72,9 @@ export default function CanvasSettings() {
   ]);
 
   useEffect(() => {
-    if (canvas && backgroundImage) {
+    if (!canvas) return;
+
+    if (backgroundImage) {
       FabricImage.fromURL(backgroundImage, (img, isError) => {
         if (isError || !img) {
           console.error("Ошибка загрузки фонового изображения или данные изображения недействительны.");
@@ -80,14 +84,13 @@ export default function CanvasSettings() {
           }
           return;
         }
-        // Продолжаем, если изображение успешно загружено
         img.selectable = false;
         img.evented = false;
         img.opacity = backgroundOpacity;
         canvas.backgroundImage = img;
         canvas.requestRenderAll();
       });
-    } else if (canvas) {
+    } else {
       canvas.backgroundImage = undefined;
       canvas.requestRenderAll();
     }
@@ -100,36 +103,47 @@ export default function CanvasSettings() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setImagePreview(imageUrl);
-        form.setValue("backgroundImage", imageUrl);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
     }
+
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+
+    setImagePreview(url);
+    form.setValue("backgroundImage", url);
   };
 
   const handleRemoveImage = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
     setImagePreview(null);
     form.setValue("backgroundImage", null);
     removeBackgroundImage();
   };
 
   const handleClearCanvas = () => {
-    if (canvas) {
-      const bgImage = canvas.backgroundImage;
-      const bgColor = canvas.backgroundColor;
+    if (!canvas) return;
+    const bgImage = canvas.backgroundImage;
+    const bgColor = canvas.backgroundColor;
 
-      canvas.getObjects().forEach((obj) => {
-        canvas.remove(obj);
-      });
-
-      canvas.backgroundColor = bgColor;
-      canvas.backgroundImage = bgImage;
-    }
+    canvas.getObjects().forEach(obj => canvas.remove(obj));
+    canvas.backgroundColor = bgColor;
+    canvas.backgroundImage = bgImage;
   };
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={close}>
@@ -151,7 +165,7 @@ export default function CanvasSettings() {
             <Label>Показать сетку</Label>
             <Switch
               checked={form.watch("showGrid")}
-              onCheckedChange={(checked) => form.setValue("showGrid", checked)}
+              onCheckedChange={checked => form.setValue("showGrid", checked)}
             />
           </div>
 

@@ -10,6 +10,17 @@ import { PathfindingResult } from "./PathfindingResult";
 import { PathfindingVisualization } from "./PathfindingVisualization";
 import type { CanvasJson } from "./PathfinderSVG";
 import React from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 function parseFloorsToGraph(floorsData: unknown): {
   graph: Graph,
@@ -120,7 +131,14 @@ function parseFloorsToGraph(floorsData: unknown): {
 
   for (const stairA of stairs) {
     for (const stairB of stairs) {
-      if (stairA.id !== stairB.id && stairA.x === stairB.x && stairA.y === stairB.y && Math.abs(stairA.floor - stairB.floor) === 1) {
+      if (
+        stairA.id !== stairB.id &&
+        stairA.x === stairB.x &&
+        stairA.y === stairB.y &&
+        stairA.floor !== undefined &&
+        stairB.floor !== undefined &&
+        Math.abs(stairA.floor - stairB.floor) === 1
+      ) {
         graph.addEdge(stairA.id, stairB.id, 1);
       }
     }
@@ -159,6 +177,26 @@ function buildPathPoints(path: PathNode[]): { x: number, y: number }[] {
   return points;
 }
 
+function exportAllPaths(graph: Graph, rooms: PathNode[]) {
+  const paths: Record<string, string[]> = {};
+  const algo = new AStar(graph);
+
+  for (const start of rooms) {
+    for (const end of rooms) {
+      if (start.id !== end.id) {
+        const res = algo.findPath(start.id, end.id);
+        if (res.path.length) {
+          paths[`${start.id}_${end.id}`] = res.path.map(n => n.id);
+        }
+      }
+    }
+  }
+
+  // Генерируем JS-вставку
+  const js = `\n// Pathfinder Embed\nwindow.PATHFINDER_PATHS = ${JSON.stringify(paths, null, 2)};\nwindow.getPath = function(startId, endId) {\n  return window.PATHFINDER_PATHS[startId + "_" + endId] || [];\n};\n`;
+  return js;
+}
+
 export function PathfinderApp() {
   const [algorithm, setAlgorithm] = useState('astar');
   const [start, setStart] = useState('');
@@ -168,6 +206,9 @@ export function PathfinderApp() {
   const [rooms, setRooms] = useState<PathNode[]>([]);
   const [floors, setFloors] = useState<{ id: string, number: number, name?: string }[]>([]);
   const [currentFloorId, setCurrentFloorId] = useState<string>('');
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportCode, setExportCode] = useState("");
+  const [exportGenerated, setExportGenerated] = useState(false);
 
   let graph: Graph;
   let canvasJson: CanvasJson | null = null;
@@ -193,115 +234,181 @@ export function PathfinderApp() {
 
   const pathPoints = result?.path ? buildPathPoints(result.path) : [];
 
-function handleFindPath() {
-  if (!start || !end) return;
+  function handleFindPath() {
+    if (!start || !end) return;
 
-  const startNode = graph.nodes[start];
-  const endNode = graph.nodes[end];
-  if (!startNode || !endNode) return;
+    const startNode = graph.nodes[start];
+    const endNode = graph.nodes[end];
+    if (!startNode || !endNode) return;
 
-  const algo = algorithm === 'astar' ? new AStar(graph) : new Dijkstra(graph);
+    const algo = algorithm === 'astar' ? new AStar(graph) : new Dijkstra(graph);
 
-  if (startNode.floor === endNode.floor) {
-    setResult(algo.findPath(start, end));
-    return;
+    if (startNode.floor === endNode.floor) {
+      setResult(algo.findPath(start, end));
+      return;
+    }
+
+    const stairsStart = Object.values(graph.nodes).filter(n => n.type === 'stairs' && n.floor === startNode.floor);
+    const stairsEnd = Object.values(graph.nodes).filter(n => n.type === 'stairs' && n.floor === endNode.floor);
+
+    if (!stairsStart.length || !stairsEnd.length) {
+      setResult(null);
+      return;
+    }
+
+    const bestStairStart = stairsStart.reduce((closest, stair) => {
+      const d = Math.hypot(stair.x - startNode.x, stair.y - startNode.y);
+      const dc = Math.hypot(closest.x - startNode.x, closest.y - startNode.y);
+      return d < dc ? stair : closest;
+    }, stairsStart[0]);
+
+    const bestStairEnd = stairsEnd.reduce((closest, stair) => {
+      const d = Math.hypot(stair.x - endNode.x, stair.y - endNode.y);
+      const dc = Math.hypot(closest.x - endNode.x, closest.y - endNode.y);
+      return d < dc ? stair : closest;
+    }, stairsEnd[0]);
+
+    const part1 = algo.findPath(start, bestStairStart.id);
+    const part2 = algo.findPath(bestStairStart.id, bestStairEnd.id);
+    const part3 = algo.findPath(bestStairEnd.id, end);
+
+    if (part1.path.length && part2.path.length && part3.path.length) {
+      const fullPath = [
+        ...part1.path,
+        ...part2.path.slice(1),
+        ...part3.path.slice(1)
+      ];
+      const allVisited = [
+        ...part1.visitedNodes,
+        ...part2.visitedNodes,
+        ...part3.visitedNodes
+      ];
+      setResult({ path: fullPath, visitedNodes: allVisited });
+    } else {
+      setResult(null);
+    }
   }
 
-  const stairsStart = Object.values(graph.nodes).filter(n => n.type === 'stairs' && n.floor === startNode.floor);
-  const stairsEnd = Object.values(graph.nodes).filter(n => n.type === 'stairs' && n.floor === endNode.floor);
-
-  if (!stairsStart.length || !stairsEnd.length) {
-    setResult(null);
-    return;
+  function handleExportGenerate() {
+    if (!graph || !rooms.length) return;
+    const js = exportAllPaths(graph, rooms);
+    setExportCode(js);
+    setExportGenerated(true);
   }
 
-  const bestStairStart = stairsStart.reduce((closest, stair) => {
-    const d = Math.hypot(stair.x - startNode.x, stair.y - startNode.y);
-    const dc = Math.hypot(closest.x - startNode.x, closest.y - startNode.y);
-    return d < dc ? stair : closest;
-  }, stairsStart[0]);
-
-  const bestStairEnd = stairsEnd.reduce((closest, stair) => {
-    const d = Math.hypot(stair.x - endNode.x, stair.y - endNode.y);
-    const dc = Math.hypot(closest.x - endNode.x, closest.y - endNode.y);
-    return d < dc ? stair : closest;
-  }, stairsEnd[0]);
-
-  const part1 = algo.findPath(start, bestStairStart.id);
-  const part2 = algo.findPath(bestStairStart.id, bestStairEnd.id);
-  const part3 = algo.findPath(bestStairEnd.id, end);
-
-  if (part1.path.length && part2.path.length && part3.path.length) {
-    const fullPath = [
-      ...part1.path,
-      ...part2.path.slice(1),
-      ...part3.path.slice(1)
-    ];
-    const allVisited = [
-      ...part1.visitedNodes,
-      ...part2.visitedNodes,
-      ...part3.visitedNodes
-    ];
-    setResult({ path: fullPath, visitedNodes: allVisited });
-  } else {
-    setResult(null);
+  function handleExportCopy() {
+    if (!exportCode) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(exportCode);
+      alert("JS-вставка скопирована в буфер обмена!");
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = exportCode;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert("JS-вставка скопирована в буфер обмена!");
+      } catch {
+        alert("Не удалось скопировать JS-вставку");
+      }
+      document.body.removeChild(textArea);
+    }
   }
-}
-
 
   return (
     <div className="flex flex-1 bg-white dark:bg-black">
-      <FloorSidebar
-        floors={floors}
-        currentFloorId={currentFloorId}
-        onChange={setCurrentFloorId}
-        className="h-full min-w-[260px] max-w-[320px] border-r-0 rounded-l-xl shadow-md bg-white dark:bg-neutral-900"
-      />
-      <main className="flex-1 flex flex-col items-center justify-start w-full h-full pl-8 min-h-0">
-        <div className="w-full h-full flex flex-col">
-          <Card className="flex-1 flex flex-col shadow-md rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl h-full font-bold">
-                <Search className="text-blue-600" />
-                Найти путь
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex h-full flex-col">
-              <PathfindingControls
-                algorithm={algorithm}
-                setAlgorithm={setAlgorithm}
-                start={start}
-                setStart={setStart}
-                end={end}
-                setEnd={setEnd}
-                rooms={rooms}
-                floors={floors}
-                currentFloorId={currentFloorId}
-                onFindPath={handleFindPath}
-                onLoadFloors={(data: unknown) => {
-                  setFloorsData(data);
-                  setRooms([]);
-                  setResult(null);
-                  setStart('');
-                  setEnd('');
-                }}
-                allowAllRooms
-              />
-              <div className="flex-1 flex flex-col gap-6 min-h-0">
-                <PathfindingVisualization
-                  canvasJson={canvasJson}
-                  pathPoints={pathPoints}
-                  walls={walls.filter(w => {
-                    const floor = floors.find(f => f.id === currentFloorId);
-                    return floor && w.floor === floor.number;
-                  })}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <FloorSidebar
+          floors={floors}
+          currentFloorId={currentFloorId}
+          onChange={setCurrentFloorId}
+        />
+        <main className="flex-1 flex flex-col items-center justify-start w-full h-full pl-8 min-h-0">
+          <div className="w-full h-full flex flex-col">
+            <Card className="flex-1 flex flex-col shadow-md rounded-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-2xl h-full font-bold">
+                  <Search className="text-blue-600" />
+                  Найти путь
+                  <DialogTrigger asChild>
+                    <Button
+                      className="ml-auto"
+                      variant="outline"
+                      size="sm"
+                      title="Экспортировать все пути как JS-вставку"
+                    >
+                      Экспортировать
+                    </Button>
+                  </DialogTrigger>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex h-full flex-col">
+                <PathfindingControls
+                  algorithm={algorithm}
+                  setAlgorithm={setAlgorithm}
+                  start={start}
+                  setStart={setStart}
+                  end={end}
+                  setEnd={setEnd}
+                  rooms={rooms}
+                  floors={floors}
+                  currentFloorId={currentFloorId}
+                  onFindPath={handleFindPath}
+                  onLoadFloors={(data: unknown) => {
+                    setFloorsData(data);
+                    setRooms([]);
+                    setResult(null);
+                    setStart('');
+                    setEnd('');
+                  }}
+                  allowAllRooms
                 />
-                <PathfindingResult result={result} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+                <div className="flex-1 flex flex-col gap-6 min-h-0">
+                  <PathfindingVisualization
+                    canvasJson={canvasJson}
+                    pathPoints={pathPoints}
+                    walls={walls.filter(w => {
+                      const floor = floors.find(f => f.id === currentFloorId);
+                      return floor && w.floor === floor.number;
+                    })}
+                  />
+                  <PathfindingResult result={result} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Экспорт JS-вставки</DialogTitle>
+              <DialogDescription>
+                Сгенерируйте и скопируйте код для вставки на другой сайт. Все пути будут предрассчитаны.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <Button onClick={handleExportGenerate} disabled={exportGenerated}>
+                Сгенерировать
+              </Button>
+              <textarea
+                className="w-full min-h-[180px] rounded border p-2 font-mono text-xs bg-neutral-100 dark:bg-neutral-900"
+                value={exportCode}
+                readOnly
+                placeholder="Сначала нажмите 'Сгенерировать'"
+                style={{ resize: 'vertical' }}
+              />
+              <DialogFooter>
+                <Button onClick={handleExportCopy} disabled={!exportCode} variant="outline">
+                  Скопировать
+                </Button>
+                <DialogClose asChild>
+                  <Button variant="secondary">Закрыть</Button>
+                </DialogClose>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </main>
+      </Dialog>
     </div>
   );
 }

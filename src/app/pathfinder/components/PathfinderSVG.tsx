@@ -129,7 +129,7 @@ export function PathfinderSVG({
         })}
 
       {/* Стены */}
-{walls.map((wall, i) => (
+{/* {walls.map((wall, i) => (
   <line
     key={`wall-${i}`}
     x1={Math.abs(wall.x1)}
@@ -139,10 +139,10 @@ export function PathfinderSVG({
     stroke="#222"
     strokeWidth={2}
   />
-))}
+))} */}
 
       {/* Двери и линии */}
-      {canvasJson.objects?.map((obj, i) => {
+      {/* {canvasJson.objects?.map((obj, i) => {
         if (obj.type === 'Line') {
           const line = obj as LineObj;
           const isDoor = line.stroke === 'brown';
@@ -164,7 +164,7 @@ export function PathfinderSVG({
           );
         }
         return null;
-      })}
+      })} */}
 
       {/* Лестницы */}
       {canvasJson.objects
