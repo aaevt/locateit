@@ -4,21 +4,17 @@ import { useRef, useState, useEffect } from "react";
 import * as fabric from "fabric";
 import { useCanvasSettingsStore } from "@/app/constructor/stores/useCanvasSettingsStore";
 import {
-  initCanvasZoomEvents,
   useCanvasZoom,
 } from "@/app/constructor/hooks/useCanvasZoom";
 import {
-  initCanvasPanEvents,
   useCanvasPan,
 } from "@/app/constructor/hooks/useCanvasPan";
 import {
   useCanvasObjectTransform,
-  initObjectTransformEvents,
 } from "@/app/constructor/hooks/useCanvasObjectTransform";
 import { useCanvasGrid } from "@/app/constructor/hooks/useCanvasGrid";
 import {
   useCanvasTools,
-  initCanvasToolsEvents,
 } from "@/app/constructor/hooks/useCanvasTools";
 import { useCanvasStore } from "@/app/constructor/stores/useCanvasStore";
 import { useFloorStore } from "@/app/constructor/stores/useFloorStore";
@@ -27,6 +23,7 @@ import { saveToStorage } from "../libs/localStorage";
 import ZoomControls from "@/app/constructor/components/ZoomControls";
 import CanvasSettings from "@/app/constructor/components/CanvasSettings";
 import { useActiveToolStore } from "../stores/useActiveToolStore";
+import { FabricImage } from "fabric";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,7 +44,6 @@ export default function Canvas() {
   const { setCanvas, setObjects } = useCanvasStore();
   const { floors, currentFloorId, saveCurrentFloorJson } = useFloorStore();
   const { activeTool } = useActiveToolStore();
-  console.log(activeTool);
 
   const limitPan = () => {
     if (!fabricCanvas.current) return;
@@ -84,27 +80,35 @@ export default function Canvas() {
     canvas.setViewportTransform(vpt);
   };
 
-  useEffect(() => {
-    const canvas = fabricCanvas.current;
-    if (!canvas) return;
-    console.log(canvas, backgroundColor, backgroundImage, backgroundOpacity);
+useEffect(() => {
+  const canvas = fabricCanvas.current;
+  if (!canvas) return;
 
-    canvas.backgroundColor = backgroundColor;
+  canvas.backgroundColor = backgroundColor;
 
-    if (backgroundImage) {
-      fabric.FabricImage.fromURL(backgroundImage, (img) => {
-        img.set({
-          opacity: backgroundOpacity,
-          selectable: false,
-          evented: false,
-        });
-        canvas.backgroundImage = img;
+  console.log(backgroundImage);
+  if (backgroundImage) {
+    FabricImage.fromURL(backgroundImage, (img) => {
+      if (!img) {
+        console.error("Ошибка загрузки фонового изображения");
+        canvas.backgroundImage = undefined;
         canvas.renderAll();
+        return;
+      }
+      img.set({
+        opacity: backgroundOpacity,
+        selectable: false,
+        evented: false,
       });
-    } else {
+      canvas.backgroundImage = img;
+      console.log("Background image loaded:", img);
       canvas.renderAll();
-    }
-  }, [backgroundColor, backgroundImage, backgroundOpacity]);
+    });
+  } else {
+    canvas.backgroundImage = undefined;
+    canvas.renderAll();
+  }
+}, [backgroundColor, backgroundImage, backgroundOpacity]);
 
   const { drawGrid } = useCanvasGrid(
     gridRef,
@@ -122,7 +126,6 @@ export default function Canvas() {
 
   useEffect(() => {
     if (fabricCanvas.current) {
-      console.log("Canvas size changed");
       drawGrid();
     }
   }, [fabricCanvas.current, canvasWidth, canvasHeight, showGrid, gridSize]);
@@ -141,7 +144,7 @@ export default function Canvas() {
       const currentFloor = floors.find((f) => f.id === currentFloorId);
       if (currentFloor?.canvasJson) {
         fabricCanvas.current.loadFromJSON(currentFloor.canvasJson, () => {
-          fabricCanvas.current?.renderAll();
+          fabricCanvas.current?.requestRenderAll();
         });
       }
     }
@@ -181,7 +184,7 @@ export default function Canvas() {
       canvas.off("selection:cleared", updateActive);
       canvas.off("mouse:down", updateActive);
     };
-  }, [fabricCanvas]);
+  }, [fabricCanvas.current]);
 
   return (
     <div
@@ -198,7 +201,7 @@ export default function Canvas() {
       <canvas
         ref={gridRef}
         className="absolute top-0 left-0 pointer-events-none"
-        width={canvasWidth}
+        width={canvasWidth.current}
         height={canvasHeight}
         style={{ zIndex: 2 }}
       />

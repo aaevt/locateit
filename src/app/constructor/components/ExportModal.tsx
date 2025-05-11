@@ -12,12 +12,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCanvasStore } from "@/app/constructor/stores/useCanvasStore";
+import { useFloorStore } from "@/app/constructor/stores/useFloorStore";
 import { Download } from "lucide-react";
 
 export default function ExportModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [embedCode, setEmbedCode] = useState("");
   const { canvas } = useCanvasStore();
+  const { floors } = useFloorStore();
 
   const handleSimpleExport = (format: "svg" | "json") => {
     if (!canvas) {
@@ -27,7 +29,6 @@ export default function ExportModal() {
 
     try {
       if (format === "svg") {
-        // Экспорт в SVG
         const svg = canvas.toSVG({
           viewBox: {
             x: 0,
@@ -48,7 +49,9 @@ export default function ExportModal() {
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(svgUrl);
       } else {
-        const json = canvas.toJSON(['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']);
+        const json = canvas.toJSON({
+          additionalKeys: ['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']
+        });
         
         const jsonBlob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
         const jsonUrl = URL.createObjectURL(jsonBlob);
@@ -74,8 +77,10 @@ export default function ExportModal() {
     }
 
     try {
-      const json = canvas.toJSON(['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']);
-      const base64 = btoa(JSON.stringify(json));
+      const json = canvas.toJSON({
+        additionalKeys: ['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']
+      });
+      const base64 = window.btoa(JSON.stringify(json));
       const embedCode = `<iframe 
         src="/viewer?data=${base64}" 
         width="100%" 
@@ -105,6 +110,34 @@ export default function ExportModal() {
       alert("Ошибка при сохранении кода для вставки. Пожалуйста, попробуйте еще раз.");
     }
   };
+  
+  const handleExportAllFloors = () => {
+    try {
+      const allFloorsData = {
+        floors: floors.map(floor => ({
+          id: floor.id,
+          name: floor.name,
+          number: floor.number,
+          canvasJson: floor.canvasJson
+        }))
+      };
+      
+      const jsonBlob = new Blob([JSON.stringify(allFloorsData, null, 2)], { type: 'application/json' });
+      const jsonUrl = URL.createObjectURL(jsonBlob);
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.href = jsonUrl;
+      downloadLink.download = 'all-floors.json';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(jsonUrl);
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Export all floors error:", error);
+      alert("Ошибка при экспорте всех этажей. Пожалуйста, попробуйте еще раз.");
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -132,20 +165,27 @@ export default function ExportModal() {
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 Выберите формат для экспорта:
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-2">
                 <Button
                   variant="outline"
                   onClick={() => handleSimpleExport("svg")}
-                  className="flex-1"
+                  className="w-full"
                 >
                   Экспорт в SVG
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => handleSimpleExport("json")}
-                  className="flex-1"
+                  className="w-full"
                 >
-                  Экспорт в JSON
+                  Экспорт этажа
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleExportAllFloors}
+                  className="w-full"
+                >
+                  Экспорт всех этажей
                 </Button>
               </div>
             </div>

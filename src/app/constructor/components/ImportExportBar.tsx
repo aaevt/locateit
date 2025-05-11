@@ -22,18 +22,33 @@ export default function ImportExportBar() {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target?.result as string);
-          canvas.loadFromJSON(data, () => {
-            canvas.renderAll();
-            const jsonData = canvas.toJSON();
-            localStorage.setItem(
-              `floor_${currentFloorId}`,
-              JSON.stringify(jsonData),
-            );
-          });
+          
+          if (data.floors && Array.isArray(data.floors)) {
+            if (confirm("Обнаружен файл с несколькими этажами. Импортировать все этажи? Это заменит текущие этажи.")) {
+              localStorage.setItem("floor-store", JSON.stringify({
+                state: { 
+                  floors: data.floors,
+                  currentFloorId: data.floors[0]?.id || null
+                }
+              }));
+              
+              alert("Этажи успешно импортированы. Страница будет перезагружена.");
+              window.location.reload();
+            }
+          } else {
+            canvas.loadFromJSON(data, () => {
+              canvas.renderAll();
+              const jsonData = canvas.toJSON();
+              localStorage.setItem(
+                `floor_${currentFloorId}`,
+                JSON.stringify(jsonData),
+              );
+            });
+          }
         } catch (error) {
           console.error("Error importing file:", error);
           alert(
-            "Ошибка при импорте файла. Пожалуйста, убедитесь, что файл корректный.",
+            "Ошибка при импорте файла. Пожалуйста, убедитесь, что файл корректный."
           );
         }
       };

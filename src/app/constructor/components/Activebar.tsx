@@ -1,20 +1,27 @@
 "use client";
 
 import { useCanvasStore } from "@/app/constructor/stores/useCanvasStore";
-import { useEffect, useState } from "react";
+import { useFloorStore } from "@/app/constructor/stores/useFloorStore";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Room } from "@/app/constructor/classes/Room";
 import { Stairs } from "@/app/constructor/classes/Stairs";
-import { Line } from "fabric";
+import { Line, FabricObject } from "fabric";
 
 export default function Activebar() {
   const { activeObject, canvas } = useCanvasStore();
+  const { saveCurrentFloorJson } = useFloorStore();
+  const [, forceUpdateComponent] = useState(0);
 
-  const forceRender = () => {
-    activeObject?.setCoords?.();
+  const handlePropertyChange = () => {
     canvas?.requestRenderAll();
+    if (canvas) {
+      const canvasJson = canvas.toJSON();
+      saveCurrentFloorJson(canvasJson);
+    }
+    forceUpdateComponent((c) => c + 1);
   };
 
   const renderRoomProps = (room: Room) => (
@@ -25,7 +32,7 @@ export default function Activebar() {
           value={room.label || ""}
           onChange={(e) => {
             room.label = e.target.value;
-            forceRender();
+            handlePropertyChange();
           }}
         />
       </div>
@@ -36,7 +43,18 @@ export default function Activebar() {
           value={room.roomNumber || ""}
           onChange={(e) => {
             room.roomNumber = Number(e.target.value);
-            forceRender();
+            handlePropertyChange();
+          }}
+        />
+      </div>
+      <div>
+        <Label className="text-sm">Цвет комнаты</Label>
+        <Input
+          type="color"
+          value={(room.fill as string) || "#ffffff"}
+          onChange={(e) => {
+            room.fill = e.target.value;
+            handlePropertyChange();
           }}
         />
       </div>
@@ -44,19 +62,33 @@ export default function Activebar() {
   );
 
   const renderStairsProps = (stairs: Stairs) => (
-    <div>
-      <Label className="text-sm">Этажи</Label>
-      <Input
-        value={stairs.floors?.join(", ") || ""}
-        onChange={(e) => {
-          stairs.floors = e.target.value
-            .split(",")
-            .map((n) => parseInt(n.trim(), 10))
-            .filter((n) => !isNaN(n));
-          forceRender();
-        }}
-      />
-    </div>
+    <>
+      <div>
+        <Label className="text-sm">Этажи</Label>
+        <Input
+          value={stairs.floors?.join(", ") || ""}
+          onChange={(e) => {
+            const newFloors = e.target.value
+              .split(",")
+              .map((n) => parseInt(n.trim(), 10))
+              .filter((n) => !isNaN(n));
+            stairs.floors = newFloors;
+            handlePropertyChange();
+          }}
+        />
+      </div>
+      <div>
+        <Label className="text-sm">Цвет лестницы</Label>
+        <Input
+          type="color"
+          value={(stairs.fill as string) || "#ffffff"}
+          onChange={(e) => {
+            stairs.fill = e.target.value;
+            handlePropertyChange();
+          }}
+        />
+      </div>
+    </>
   );
 
   const renderLineProps = (line: Line) => (
@@ -68,17 +100,18 @@ export default function Activebar() {
           value={line.strokeWidth || 1}
           onChange={(e) => {
             line.set("strokeWidth", Number(e.target.value));
-            forceRender();
+            handlePropertyChange();
           }}
         />
       </div>
       <div>
         <Label className="text-sm">Цвет линии</Label>
         <Input
-          value={line.stroke as string}
+          type="color"
+          value={(line.stroke as string) || "#000000"}
           onChange={(e) => {
             line.set("stroke", e.target.value);
-            forceRender();
+            handlePropertyChange();
           }}
         />
       </div>
@@ -88,9 +121,12 @@ export default function Activebar() {
   const renderObjectProps = () => {
     if (!activeObject) return null;
 
+    if (!(activeObject instanceof FabricObject)) {
+      return <p className="text-sm text-gray-500">Выбранный элемент не является объектом Fabric</p>;
+    }
+
     if (activeObject instanceof Room) return renderRoomProps(activeObject);
     if (activeObject instanceof Stairs) return renderStairsProps(activeObject);
-
     if (activeObject.type === "line") return renderLineProps(activeObject as Line);
 
     return <p className="text-sm text-gray-500">Неизвестный тип объекта</p>;

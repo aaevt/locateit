@@ -24,7 +24,7 @@ export class Room<
   Props extends TOptions<RoomProps> = Partial<RoomProps>,
   SProps extends SerializedRoomProps = SerializedRoomProps,
   EventSpec extends ObjectEvents = ObjectEvents,
-> extends Group<Props, SProps, EventSpec> {
+> extends Group {
   static type = "room";
   declare label?: string;
   declare roomNumber?: number;

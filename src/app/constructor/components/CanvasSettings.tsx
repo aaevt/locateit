@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useCanvasSettingsStore } from "@/app/constructor/stores/useCanvasSettingsStore";
+import { useCanvasStore } from "@/app/constructor/stores/useCanvasStore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { canvasSettingsSchema } from "@/app/constructor/libs/zodSchemas";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { FabricImage } from "fabric";
 
 export default function CanvasSettings() {
   const {
@@ -28,6 +30,8 @@ export default function CanvasSettings() {
     showGrid,
     removeBackgroundImage,
   } = useCanvasSettingsStore();
+
+  const { canvas } = useCanvasStore();
 
   const [imagePreview, setImagePreview] = useState<string | null>(backgroundImage);
 
@@ -54,7 +58,40 @@ export default function CanvasSettings() {
       backgroundOpacity,
       showGrid,
     });
-  }, [gridSize, backgroundColor, canvasWidth, canvasHeight, backgroundImage, backgroundOpacity, showGrid, form]);
+  }, [
+    gridSize,
+    backgroundColor,
+    canvasWidth,
+    canvasHeight,
+    backgroundImage,
+    backgroundOpacity,
+    showGrid,
+    form,
+  ]);
+
+  useEffect(() => {
+    if (canvas && backgroundImage) {
+      FabricImage.fromURL(backgroundImage, (img, isError) => {
+        if (isError || !img) {
+          console.error("Ошибка загрузки фонового изображения или данные изображения недействительны.");
+          if (canvas) { 
+            canvas.backgroundImage = undefined;
+            canvas.requestRenderAll();
+          }
+          return;
+        }
+        // Продолжаем, если изображение успешно загружено
+        img.selectable = false;
+        img.evented = false;
+        img.opacity = backgroundOpacity;
+        canvas.backgroundImage = img;
+        canvas.requestRenderAll();
+      });
+    } else if (canvas) {
+      canvas.backgroundImage = undefined;
+      canvas.requestRenderAll();
+    }
+  }, [canvas, backgroundImage, backgroundOpacity]);
 
   const onSubmit = (values: any) => {
     setSettings(values);
@@ -80,12 +117,34 @@ export default function CanvasSettings() {
     removeBackgroundImage();
   };
 
+  const handleClearCanvas = () => {
+    if (canvas) {
+      const bgImage = canvas.backgroundImage;
+      const bgColor = canvas.backgroundColor;
+
+      canvas.getObjects().forEach((obj) => {
+        canvas.remove(obj);
+      });
+
+      canvas.backgroundColor = bgColor;
+      canvas.backgroundImage = bgImage;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={close}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Настройки Канваса</DialogTitle>
         </DialogHeader>
+
+        <Button
+          variant="outline"
+          className="w-full mb-4"
+          onClick={handleClearCanvas}
+        >
+          Очистить канвас
+        </Button>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">

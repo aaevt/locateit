@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { useFloorStore } from "@/app/constructor/stores/useFloorStore";
+import { useCanvasStore } from "@/app/constructor/stores/useCanvasStore";
 import {
   DndContext,
   closestCenter,
@@ -21,6 +22,8 @@ import { CSS } from "@dnd-kit/utilities";
 
 function SortableFloorItem({ floor, currentFloorId }: any) {
   const { setCurrentFloor, removeFloor, updateFloorName } = useFloorStore();
+  const { canvas } = useCanvasStore();
+  const { saveCurrentFloorJson } = useFloorStore();
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: floor.id });
 
@@ -66,7 +69,12 @@ function SortableFloorItem({ floor, currentFloorId }: any) {
         <Button
           variant="ghost"
           className="flex-1 justify-start"
-          onClick={() => setCurrentFloor(floor.id)}
+          onClick={() => {
+            if (canvas) {
+              saveCurrentFloorJson(canvas.toJSON());
+            }
+            setCurrentFloor(floor.id);
+          }}
           onDoubleClick={() => setIsEditing(true)}
         >
           {newName}

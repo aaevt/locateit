@@ -117,8 +117,8 @@ export class Stairs extends Group {
 
     stairs.set({
       angle: angle ?? 0,
-      scaleX: scaleX ?? 1,
-      scaleY: scaleY ?? 1,
+      scaleX: scaleX ?? 0,
+      scaleY: scaleY ?? 0,
       flipX: flipX ?? false,
       flipY: flipY ?? false,
     });

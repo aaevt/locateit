@@ -31,11 +31,46 @@ export const useCanvasObjectTransform = (
     saveToStorage({ [currentFloorId]: json });
   };
 
-  const snapObjectPosition = (obj: FabricObject) => {
-    obj.left = snapToGrid(obj.left ?? 0);
-    obj.top = snapToGrid(obj.top ?? 0);
-    obj.setCoords();
-  };
+const snapObjectPosition = (obj: FabricObject) => {
+  obj.left = snapToGrid(obj.left ?? 0);
+  obj.top = snapToGrid(obj.top ?? 0);
+
+  if (obj.type === "group") {
+    const group = obj as Group;
+    const rect = group.item(0) as Rect;
+    const text = group.item(1) as Textbox;
+
+    const newWidth = snapToGrid((rect.width ?? 0) * (group.scaleX ?? 1));
+    const newHeight = snapToGrid((rect.height ?? 0) * (group.scaleY ?? 1));
+
+    rect.set({ width: newWidth, height: newHeight });
+    text.set({
+      width: newWidth,
+      height: newHeight,
+      left: newWidth / 2,
+      top: newHeight / 2,
+    });
+
+    group.set({
+      scaleX: 1,
+      scaleY: 1,
+    });
+  }
+
+  else if ("width" in obj && "height" in obj) {
+    const newWidth = snapToGrid((obj.width ?? 0) * (obj.scaleX ?? 1));
+    const newHeight = snapToGrid((obj.height ?? 0) * (obj.scaleY ?? 1));
+
+    obj.set({
+      width: newWidth,
+      height: newHeight,
+      scaleX: 1,
+      scaleY: 1,
+    });
+  }
+
+  obj.setCoords();
+};
 
   const handleGroupScaling = (group: Group) => {
     const rect = group.item(0) as Rect;
@@ -129,7 +164,6 @@ export const useCanvasObjectTransform = (
       if (!obj) return;
 
       const roundedAngle = Math.round((obj.angle ?? 0) / 45) * 45;
-      console.log(roundedAngle);
       obj.rotate(roundedAngle);
 
       updateStore();

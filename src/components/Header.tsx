@@ -17,7 +17,15 @@ export default function Header() {
                 href="/constructor"
                 className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                Constructor
+              Конструктор
+              </Link>
+            </li>
+                        <li>
+              <Link
+                href="/pathfinder"
+                className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                Поиск пути
               </Link>
             </li>
             <li>
@@ -25,7 +33,7 @@ export default function Header() {
                 href="/docs"
                 className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                Docs
+                Документация
               </Link>
             </li>
           </ul>
