@@ -2,15 +2,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FloorLoader } from "./FloorLoader";
-import { AlgorithmSelector } from "./AlgorithmSelector";
 import { RoomSelector } from "./RoomSelector";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import type { PathNode } from "../types/graph";
 
 interface PathfindingControlsProps {
-  algorithm: string;
-  setAlgorithm: (algo: string) => void;
   start: string;
   setStart: (id: string) => void;
   end: string;
@@ -23,8 +20,6 @@ interface PathfindingControlsProps {
 }
 
 export function PathfindingControls({
-  algorithm,
-  setAlgorithm,
   start,
   setStart,
   end,
@@ -45,9 +40,6 @@ export function PathfindingControls({
         <div className="flex flex-col md:flex-row md:items-end md:gap-8 gap-4">
           <div className="flex-1">
             <FloorLoader onLoad={onLoadFloors} />
-          </div>
-          <div className="flex-1">
-            <AlgorithmSelector value={algorithm} onChange={setAlgorithm} />
           </div>
         </div>
         <Separator />

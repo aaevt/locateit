@@ -9,7 +9,7 @@ export const createWall = (
 ) => {
   return new Line([x1, y1, x2, y2], {
     stroke: 'black',
-    strokeWidth: 2,
+    strokeWidth: 4,
     selectable: true,
     hasControls: false,
     hasBorders: false,

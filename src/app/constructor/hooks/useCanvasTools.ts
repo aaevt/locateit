@@ -29,9 +29,7 @@ export const useCanvasTools = (
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentObj, setCurrentObj] = useState<FabricObject | null>(null);
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
-    null,
-  );
+  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
 
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
 
@@ -50,6 +48,21 @@ export const useCanvasTools = (
   };
 
   useEffect(() => {
+    if (!fabricCanvas) return;
+
+    const isBuildMode = ["wall", "door", "room", "stair", "point"].includes(activeTool);
+
+    fabricCanvas.getObjects().forEach((obj) => {
+      obj.selectable = !isBuildMode;
+      obj.evented = !isBuildMode;
+    });
+
+    fabricCanvas.selection = !isBuildMode;
+
+    fabricCanvas.requestRenderAll();
+  }, [fabricCanvas, activeTool]);
+
+  useEffect(() => {
     const canvas = fabricCanvas;
     if (!canvas) return;
 
@@ -62,15 +75,12 @@ export const useCanvasTools = (
     };
 
     const handleMouseDown = (e: FabricEvent) => {
-      const canvas = fabricCanvas;
       if (!canvas) return;
 
-      // Удаление
       if (activeTool === "delete" && e.target) {
-        const targets =
-          canvas.getActiveObjects().length > 0
-            ? canvas.getActiveObjects()
-            : [e.target];
+        const targets = canvas.getActiveObjects().length > 0
+          ? canvas.getActiveObjects()
+          : [e.target];
         targets.forEach((obj) => canvas.remove(obj));
         canvas.discardActiveObject();
         canvas.requestRenderAll();
@@ -78,7 +88,6 @@ export const useCanvasTools = (
         return;
       }
 
-      // Выделение
       if (activeTool === "none" && e.target) {
         canvas.setActiveObject(e.target);
         return;
@@ -86,7 +95,6 @@ export const useCanvasTools = (
 
       const { x, y } = getSnappedPointer(e);
 
-      // Однокликовая точка
       if (activeTool === "point") {
         const point = createPoint(x, y);
         canvas.add(point);
@@ -94,7 +102,6 @@ export const useCanvasTools = (
         return;
       }
 
-      // Первый клик
       if (!isDrawing) {
         setStartPos({ x, y });
 
@@ -128,7 +135,6 @@ export const useCanvasTools = (
           setIsDrawing(true);
         }
       } else {
-        // Второй клик: финальное создание
         if (!startPos || !currentObj) return;
 
         const { x: startX, y: startY } = startPos;

@@ -37,10 +37,8 @@ export default function ExportModal() {
             height: canvas.height
           }
         });
-        
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const svgUrl = URL.createObjectURL(svgBlob);
-        
         const downloadLink = document.createElement('a');
         downloadLink.href = svgUrl;
         downloadLink.download = 'canvas.svg';
@@ -49,16 +47,26 @@ export default function ExportModal() {
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(svgUrl);
       } else {
-        const json = canvas.toJSON({
-          additionalKeys: ['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']
-        });
-        
-        const jsonBlob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+        // Экспорт одного этажа всегда в формате floors: [ ... ]
+        let currentFloor = null;
+        if (floors && floors.length > 0) {
+          currentFloor = floors.find(f => f.canvasJson && f.id) || floors[0];
+        }
+        const exportData = {
+          floors: [
+            {
+              id: currentFloor?.id || 'floor1',
+              number: currentFloor?.number || 1,
+              name: currentFloor?.name || '',
+              canvasJson: currentFloor?.canvasJson || canvas.toJSON()
+            }
+          ]
+        };
+        const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const jsonUrl = URL.createObjectURL(jsonBlob);
-        
         const downloadLink = document.createElement('a');
         downloadLink.href = jsonUrl;
-        downloadLink.download = 'canvas.json';
+        downloadLink.download = 'floor.json';
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -77,9 +85,7 @@ export default function ExportModal() {
     }
 
     try {
-      const json = canvas.toJSON({
-        additionalKeys: ['id', 'name', 'type', 'left', 'top', 'width', 'height', 'fill', 'stroke', 'strokeWidth']
-      });
+      const json = canvas.toJSON();
       const base64 = window.btoa(JSON.stringify(json));
       const embedCode = `<iframe 
         src="/viewer?data=${base64}" 
@@ -248,4 +254,4 @@ export default function ExportModal() {
       </DialogContent>
     </Dialog>
   );
-} 
+}

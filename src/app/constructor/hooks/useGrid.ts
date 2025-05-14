@@ -21,7 +21,6 @@ export const drawGrid = (
 
   gridRef.current.width = width;
   gridRef.current.height = height;
-  ctx.clearRect(0, 0, width, height);
 
   if (!showGrid) return;
 

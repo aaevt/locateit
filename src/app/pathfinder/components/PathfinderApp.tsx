@@ -22,6 +22,159 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
+// Проверка пересечения двух отрезков
+export function segmentsIntersect(a: { x: number, y: number }, b: { x: number, y: number }, c: { x: number, y: number }, d: { x: number, y: number }) {
+  function ccw(p1: { x: number, y: number }, p2: { x: number, y: number }, p3: { x: number, y: number }) {
+    return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
+  }
+  return (ccw(a, c, d) !== ccw(b, c, d)) && (ccw(a, b, c) !== ccw(a, b, d));
+}
+
+// Проверка, пересекает ли путь стену
+export function isPathBlocked(
+  a: { x: number, y: number },
+  b: { x: number, y: number },
+  walls: { x1: number, y1: number, x2: number, y2: number, floor: number }[],
+  floor: number
+): boolean {
+  for (const wall of walls) {
+    if (wall.floor !== floor) continue;
+    if (segmentsIntersect(a, b, { x: wall.x1, y: wall.y1 }, { x: wall.x2, y: wall.y2 })) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Типы для grid
+export interface GridCell {
+  x: number;
+  y: number;
+  type: 'wall' | 'room' | 'stairs' | 'empty';
+}
+
+export interface FloorGrid {
+  floorId: string;
+  floorNumber: number;
+  width: number;
+  height: number;
+  cells: GridCell[][]; // cells[y][x]
+}
+
+// Генерация grid по canvasJson этажа
+function generateGrid(canvasJson: CanvasJson, floorId: string, floorNumber: number, gridSize = 20): FloorGrid {
+  // Определяем размеры grid
+  let maxX = 0, maxY = 0;
+  for (const obj of canvasJson.objects) {
+    if ('left' in obj && 'top' in obj) {
+      maxX = Math.max(maxX, obj.left + ('width' in obj ? obj.width ?? 0 : 0));
+      maxY = Math.max(maxY, obj.top + ('height' in obj ? obj.height ?? 0 : 0));
+    }
+  }
+  const width = Math.ceil(maxX / gridSize) + 2;
+  const height = Math.ceil(maxY / gridSize) + 2;
+  // Инициализация пустых ячеек
+  const cells: GridCell[][] = Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) => ({ x, y, type: 'empty' as const }))
+  );
+  // Помечаем стены (логика как в SVG)
+  for (const obj of canvasJson.objects) {
+    if (obj.type === 'Line' && obj.stroke === 'black') {
+      const line = obj as { left: number; top: number; width?: number; height?: number };
+      const x1 = Math.round(line.left / gridSize);
+      const y1 = Math.round(line.top / gridSize);
+      const w = Math.round((line.width ?? 0) / gridSize);
+      const h = Math.round((line.height ?? 0) / gridSize);
+      let x2 = x1, y2 = y1;
+      if (w > h) {
+        x2 = x1 + w;
+      } else {
+        y2 = y1 + h;
+      }
+      // Брезенхем для стены
+      const dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+      const sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
+      let err = dx - dy, cx = x1, cy = y1;
+      while (true) {
+        if (cells[cy] && cells[cy][cx]) cells[cy][cx].type = 'wall';
+        if (cx === x2 && cy === y2) break;
+        const e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; cx += sx; }
+        if (e2 < dx) { err += dx; cy += sy; }
+      }
+    }
+  }
+  // Помечаем комнаты
+  for (const obj of canvasJson.objects) {
+    if (obj.type === 'room') {
+      const left = Math.floor(obj.left / gridSize);
+      const top = Math.floor(obj.top / gridSize);
+      const w = Math.ceil((obj.width ?? 100) / gridSize);
+      const h = Math.ceil((obj.height ?? 100) / gridSize);
+      for (let y = top; y < top + h; y++) {
+        for (let x = left; x < left + w; x++) {
+          if (cells[y] && cells[y][x] && cells[y][x].type === 'empty') {
+            cells[y][x].type = 'room';
+          }
+        }
+      }
+    }
+  }
+  // Помечаем лестницы
+  for (const obj of canvasJson.objects) {
+    if (obj.type === 'stairs') {
+      const left = Math.floor(obj.left / gridSize);
+      const top = Math.floor(obj.top / gridSize);
+      const w = Math.ceil((obj.width ?? 60) / gridSize);
+      const h = Math.ceil((obj.height ?? 60) / gridSize);
+      for (let y = top; y < top + h; y++) {
+        for (let x = left; x < left + w; x++) {
+          if (cells[y] && cells[y][x]) {
+            cells[y][x].type = 'stairs';
+          }
+        }
+      }
+    }
+  }
+  return { floorId, floorNumber, width, height, cells };
+}
+
+// Grid A* pathfinding
+function gridAStar(grid: GridCell[][], start: { x: number, y: number }, end: { x: number, y: number }, allowTypes: GridCell['type'][] = ['room', 'stairs', 'empty']): { x: number, y: number }[] {
+  const h = (a: { x: number, y: number }, b: { x: number, y: number }) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+  type Node = { x: number, y: number, f: number, g: number, parent?: Node };
+  const open: Node[] = [];
+  const closed = new Set<string>();
+  open.push({ ...start, f: h(start, end), g: 0 });
+  while (open.length) {
+    open.sort((a, b) => a.f - b.f);
+    const current = open.shift()!;
+    if (current.x === end.x && current.y === end.y) {
+      // Восстановление пути
+      const path: { x: number, y: number }[] = [];
+      let node: Node | undefined = current;
+      while (node) {
+        path.unshift({ x: node.x, y: node.y });
+        node = node.parent;
+      }
+      return path;
+    }
+    closed.add(`${current.x},${current.y}`);
+    for (const [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
+      const nx = current.x + dx, ny = current.y + dy;
+      if (!grid[ny] || !grid[ny][nx]) continue;
+      if (!allowTypes.includes(grid[ny][nx].type)) continue;
+      if (closed.has(`${nx},${ny}`)) continue;
+      const g = current.g + 1;
+      const f = g + h({ x: nx, y: ny }, end);
+      if (!open.some(n => n.x === nx && n.y === ny && n.g <= g)) {
+        open.push({ x: nx, y: ny, f, g, parent: current });
+      }
+    }
+  }
+  return [];
+}
+
 function parseFloorsToGraph(floorsData: unknown): {
   graph: Graph,
   rooms: PathNode[],
@@ -93,7 +246,6 @@ function parseFloorsToGraph(floorsData: unknown): {
           }
         }
 
-        // Stairs
         else if ((obj.type === 'stairs' || obj.type === 'stair') && 'left' in obj && 'top' in obj) {
           const stairObj = obj as { left: number; top: number; width?: number; height?: number; floors?: number[] };
           const stairFloors = stairObj.floors && Array.isArray(stairObj.floors) ? stairObj.floors : [floorNum];
@@ -153,10 +305,16 @@ function parseFloorsToGraph(floorsData: unknown): {
           return distA < 60 && distB < 60;
         });
         if (doorBetween) {
-          graph.addEdge(roomA.id, doorBetween.id, Math.hypot(roomA.x - doorBetween.x, roomA.y - doorBetween.y));
-          graph.addEdge(doorBetween.id, roomB.id, Math.hypot(roomB.x - doorBetween.x, roomB.y - doorBetween.y));
+          if (!isPathBlocked(roomA, doorBetween, walls, roomA.floor!)) {
+            graph.addEdge(roomA.id, doorBetween.id, Math.hypot(roomA.x - doorBetween.x, roomA.y - doorBetween.y));
+          }
+          if (!isPathBlocked(roomB, doorBetween, walls, roomA.floor!)) {
+            graph.addEdge(doorBetween.id, roomB.id, Math.hypot(roomB.x - doorBetween.x, roomB.y - doorBetween.y));
+          }
         } else {
-          graph.addEdge(roomA.id, roomB.id, Math.hypot(roomA.x - roomB.x, roomA.y - roomB.y));
+          if (!isPathBlocked(roomA, roomB, walls, roomA.floor!)) {
+            graph.addEdge(roomA.id, roomB.id, Math.hypot(roomA.x - roomB.x, roomA.y - roomB.y));
+          }
         }
       }
     }
@@ -192,13 +350,11 @@ function exportAllPaths(graph: Graph, rooms: PathNode[]) {
     }
   }
 
-  // Генерируем JS-вставку
   const js = `\n// Pathfinder Embed\nwindow.PATHFINDER_PATHS = ${JSON.stringify(paths, null, 2)};\nwindow.getPath = function(startId, endId) {\n  return window.PATHFINDER_PATHS[startId + "_" + endId] || [];\n};\n`;
   return js;
 }
 
 export function PathfinderApp() {
-  const [algorithm, setAlgorithm] = useState('astar');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [result, setResult] = useState<{ path: PathNode[]; visitedNodes: PathNode[] } | null>(null);
@@ -209,10 +365,12 @@ export function PathfinderApp() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportCode, setExportCode] = useState("");
   const [exportGenerated, setExportGenerated] = useState(false);
+  const [debugGrid, setDebugGrid] = useState(false);
 
   let graph: Graph;
   let canvasJson: CanvasJson | null = null;
   let walls: { x1: number, y1: number, x2: number, y2: number, floor: number }[] = [];
+  let grid: FloorGrid | null = null;
 
   if (floorsData) {
     const parsed = parseFloorsToGraph(floorsData);
@@ -227,6 +385,7 @@ export function PathfinderApp() {
       const data = floorsData as { floors: Array<{ id: string; canvasJson: CanvasJson }> };
       const floor = data.floors.find(f => f.id === currentFloorId);
       if (floor) canvasJson = floor.canvasJson;
+      if (canvasJson) grid = generateGrid(canvasJson, currentFloorId, 1);
     }
   } else {
     graph = new Graph();
@@ -235,58 +394,68 @@ export function PathfinderApp() {
   const pathPoints = result?.path ? buildPathPoints(result.path) : [];
 
   function handleFindPath() {
-    if (!start || !end) return;
+    handleFindPathGrid();
+  }
 
-    const startNode = graph.nodes[start];
-    const endNode = graph.nodes[end];
-    if (!startNode || !endNode) return;
-
-    const algo = algorithm === 'astar' ? new AStar(graph) : new Dijkstra(graph);
-
-    if (startNode.floor === endNode.floor) {
-      setResult(algo.findPath(start, end));
+  function handleFindPathGrid() {
+    if (!start || !end || !canvasJson || !currentFloorId) return;
+    const startRoom = rooms.find(r => r.id === start);
+    const endRoom = rooms.find(r => r.id === end);
+    if (!startRoom || !endRoom) return;
+    if (startRoom.floor === endRoom.floor) {
+      const grid = generateGrid(canvasJson, currentFloorId, startRoom.floor ?? 1);
+      const gridSize = 20;
+      const sx = Math.round(startRoom.x / gridSize);
+      const sy = Math.round(startRoom.y / gridSize);
+      const ex = Math.round(endRoom.x / gridSize);
+      const ey = Math.round(endRoom.y / gridSize);
+      const path = gridAStar(grid.cells, { x: sx, y: sy }, { x: ex, y: ey });
+      setResult({
+        path: path.map((p, i) => ({ x: p.x * gridSize + gridSize/2, y: p.y * gridSize + gridSize/2, id: `waypoint_${i}_${p.x}_${p.y}`, floor: startRoom.floor, type: 'waypoint' as const })),
+        visitedNodes: []
+      });
       return;
     }
-
-    const stairsStart = Object.values(graph.nodes).filter(n => n.type === 'stairs' && n.floor === startNode.floor);
-    const stairsEnd = Object.values(graph.nodes).filter(n => n.type === 'stairs' && n.floor === endNode.floor);
-
-    if (!stairsStart.length || !stairsEnd.length) {
-      setResult(null);
-      return;
-    }
-
-    const bestStairStart = stairsStart.reduce((closest, stair) => {
-      const d = Math.hypot(stair.x - startNode.x, stair.y - startNode.y);
-      const dc = Math.hypot(closest.x - startNode.x, closest.y - startNode.y);
-      return d < dc ? stair : closest;
-    }, stairsStart[0]);
-
-    const bestStairEnd = stairsEnd.reduce((closest, stair) => {
-      const d = Math.hypot(stair.x - endNode.x, stair.y - endNode.y);
-      const dc = Math.hypot(closest.x - endNode.x, closest.y - endNode.y);
-      return d < dc ? stair : closest;
-    }, stairsEnd[0]);
-
-    const part1 = algo.findPath(start, bestStairStart.id);
-    const part2 = algo.findPath(bestStairStart.id, bestStairEnd.id);
-    const part3 = algo.findPath(bestStairEnd.id, end);
-
-    if (part1.path.length && part2.path.length && part3.path.length) {
-      const fullPath = [
-        ...part1.path,
-        ...part2.path.slice(1),
-        ...part3.path.slice(1)
-      ];
-      const allVisited = [
-        ...part1.visitedNodes,
-        ...part2.visitedNodes,
-        ...part3.visitedNodes
-      ];
-      setResult({ path: fullPath, visitedNodes: allVisited });
-    } else {
-      setResult(null);
-    }
+    const stairsStart = rooms.filter(r => r.type === 'stairs' && r.floor === startRoom.floor);
+    const stairsEnd = rooms.filter(r => r.type === 'stairs' && r.floor === endRoom.floor);
+    // Пары лестниц с совпадающими координатами
+    const matchingStairs = stairsStart.flatMap(stairA => {
+      const match = stairsEnd.find(stairB =>
+        Math.abs(stairA.x - stairB.x) < 1e-3 && Math.abs(stairA.y - stairB.y) < 1e-3
+      );
+      return match ? [{ stairA, stairB: match }] : [];
+    });
+    if (!matchingStairs.length) return; // Нет подходящей лестницы
+    // Можно выбрать ближайшую к старту
+    const { stairA: bestStairStart, stairB: bestStairEnd } = matchingStairs.reduce((closest, pair) => {
+      const d = Math.hypot(pair.stairA.x - startRoom.x, pair.stairA.y - startRoom.y);
+      const dc = Math.hypot(closest.stairA.x - startRoom.x, closest.stairA.y - startRoom.y);
+      return d < dc ? pair : closest;
+    }, matchingStairs[0]);
+    // Путь на этаже старта: комната -> лестница
+    const gridStart = generateGrid(canvasJson, currentFloorId, startRoom.floor ?? 1);
+    const gridSize = 20;
+    const sx = Math.round(startRoom.x / gridSize);
+    const sy = Math.round(startRoom.y / gridSize);
+    const stairSx = Math.round(bestStairStart.x / gridSize);
+    const stairSy = Math.round(bestStairStart.y / gridSize);
+    const path1 = gridAStar(gridStart.cells, { x: sx, y: sy }, { x: stairSx, y: stairSy });
+    // Путь на этаже конца: лестница -> комната
+    const data = floorsData as { floors: Array<{ id: string; canvasJson: CanvasJson }> };
+    const floorEnd = data.floors.find(f => f.id === endRoom.id.split('_')[0]);
+    if (!floorEnd) return;
+    const gridEnd = generateGrid(floorEnd.canvasJson, floorEnd.id, endRoom.floor ?? 1);
+    const stairEx = Math.round(bestStairEnd.x / gridSize);
+    const stairEy = Math.round(bestStairEnd.y / gridSize);
+    const ex = Math.round(endRoom.x / gridSize);
+    const ey = Math.round(endRoom.y / gridSize);
+    const path2 = gridAStar(gridEnd.cells, { x: stairEx, y: stairEy }, { x: ex, y: ey });
+    // Склеиваем путь с уникальными id
+    const fullPath = [
+      ...path1.map((p, i) => ({ x: p.x * gridSize + gridSize/2, y: p.y * gridSize + gridSize/2, id: `waypoint_start_${i}_${p.x}_${p.y}`, floor: startRoom.floor, type: 'waypoint' as const })),
+      ...path2.map((p, i) => ({ x: p.x * gridSize + gridSize/2, y: p.y * gridSize + gridSize/2, id: `waypoint_end_${i}_${p.x}_${p.y}`, floor: endRoom.floor, type: 'waypoint' as const }))
+    ];
+    setResult({ path: fullPath, visitedNodes: [] });
   }
 
   function handleExportGenerate() {
@@ -346,8 +515,6 @@ export function PathfinderApp() {
               </CardHeader>
               <CardContent className="flex-1 flex h-full flex-col">
                 <PathfindingControls
-                  algorithm={algorithm}
-                  setAlgorithm={setAlgorithm}
                   start={start}
                   setStart={setStart}
                   end={end}
@@ -365,14 +532,16 @@ export function PathfinderApp() {
                   }}
                   allowAllRooms
                 />
+                <div className="flex items-center gap-2 mb-2">
+                  <input type="checkbox" id="debugGrid" checked={debugGrid} onChange={e => setDebugGrid(e.target.checked)} />
+                  <label htmlFor="debugGrid" className="text-sm select-none cursor-pointer">Debug grid (показать сетку и стены)</label>
+                </div>
                 <div className="flex-1 flex flex-col gap-6 min-h-0">
                   <PathfindingVisualization
                     canvasJson={canvasJson}
                     pathPoints={pathPoints}
-                    walls={walls.filter(w => {
-                      const floor = floors.find(f => f.id === currentFloorId);
-                      return floor && w.floor === floor.number;
-                    })}
+                    debugGrid={debugGrid}
+                    grid={grid}
                   />
                   <PathfindingResult result={result} />
                 </div>

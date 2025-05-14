@@ -2,7 +2,7 @@
 import { Stars } from "lucide-react";
 
 interface RoomObj {
-  type: string;
+  type: "room";
   left: number;
   top: number;
   width?: number;
@@ -13,7 +13,7 @@ interface RoomObj {
 }
 
 interface StairsObj {
-  type: string;
+  type: "stairs";
   left: number;
   top: number;
   width?: number;
@@ -23,7 +23,7 @@ interface StairsObj {
 }
 
 interface LineObj {
-  type: string;
+  type: "Line";
   left: number;
   top: number;
   x1: number;
@@ -35,19 +35,18 @@ interface LineObj {
   strokeDashArray?: number[];
 }
 
-interface CanvasJson {
+export interface CanvasJson {
   objects: (RoomObj | StairsObj | LineObj)[];
 }
 
 interface PathfinderSVGProps {
   canvasJson: CanvasJson;
   path: { x: number; y: number }[];
-  walls: { x1: number; y1: number; x2: number; y2: number }[];
   width?: number;
   height?: number;
 }
 
-function roundToNearest(value: number, step = 10) {
+function round(value: number, step = 1) {
   return Math.round(value / step) * step;
 }
 
@@ -69,22 +68,14 @@ function adjustPosition(
   else if (originY === 'bottom') y -= height;
 
   return {
-    x: roundToNearest(x),
-    y: roundToNearest(y),
+    x: round(x),
+    y: round(y),
   };
 }
-
-const getLineCoordinates = (line: LineObj) => ({
-  x1: line.left + line.x1,
-  y1: line.top + line.y1,
-  x2: line.left + line.x2,
-  y2: line.top + line.y2,
-});
 
 export function PathfinderSVG({
   canvasJson,
   path,
-  walls,
   width = 1000,
   height = 1000,
 }: PathfinderSVGProps) {
@@ -99,8 +90,8 @@ export function PathfinderSVG({
       {canvasJson.objects
         ?.filter((o): o is RoomObj => o.type === 'room')
         .map((room, i) => {
-          const w = roundToNearest(room.width ?? 100);
-          const h = roundToNearest(room.height ?? 100);
+          const w = round(room.width ?? 100, 10);
+          const h = round(room.height ?? 100, 10);
           const { x, y } = adjustPosition(room.left, room.top, w, h, room.originX, room.originY);
           return (
             <g key={`room-${i}`}>
@@ -115,7 +106,7 @@ export function PathfinderSVG({
                 rx={12}
               />
               <text
-                x={x + roundToNearest(w / 2)}
+                x={x + w / 2}
                 y={y + 20}
                 textAnchor="middle"
                 fontSize={18}
@@ -129,49 +120,66 @@ export function PathfinderSVG({
         })}
 
       {/* Стены */}
-{/* {walls.map((wall, i) => (
-  <line
-    key={`wall-${i}`}
-    x1={Math.abs(wall.x1)}
-    y1={Math.abs(wall.y1)}
-    x2={Math.abs(wall.x2)}
-    y2={Math.abs(wall.y2)}
-    stroke="#222"
-    strokeWidth={2}
-  />
-))} */}
+{canvasJson.objects
+  ?.filter((o): o is LineObj => o.type === 'Line' && o.stroke === 'black')
+  .map((line, i) => {
+    const x1 = round(line.left, 10);
+    const y1 = round(line.top, 10);
+    const w = round(line.width ?? 0, 10);
+    const h = round(line.height ?? 0, 10);
 
-      {/* Двери и линии */}
-      {/* {canvasJson.objects?.map((obj, i) => {
-        if (obj.type === 'Line') {
-          const line = obj as LineObj;
-          const isDoor = line.stroke === 'brown';
-          const { x1, y1, x2, y2 } = getLineCoordinates(line);
+    const isHorizontal = w > h;
 
-          return (
-            <line
-              key={`line-${i}`}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke={line.stroke || (isDoor ? '#8d6e63' : '#222')}
-              strokeWidth={line.strokeWidth || (isDoor ? 4 : 2)}
-              strokeDasharray={
-                isDoor ? line.strokeDashArray?.join(',') || '10,5' : undefined
-              }
-            />
-          );
-        }
-        return null;
-      })} */}
+    const x2 = isHorizontal ? x1 + w : x1;
+    const y2 = isHorizontal ? y1 : y1 + h;
+
+    return (
+      <line
+        key={`wall-${i}`}
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
+        stroke="#000"
+        strokeWidth={line.strokeWidth ?? 4}
+      />
+    );
+  })}
+
+
+      {/* Двери */}
+{canvasJson.objects
+  ?.filter((o): o is LineObj => o.type === 'Line' && o.stroke === 'brown')
+  .map((line, i) => {
+    const x1 = round(line.left, 10);
+    const y1 = round(line.top, 10);
+    const w = round(line.width ?? 0, 10);
+    const h = round(line.height ?? 0, 10);
+
+    const isHorizontal = w > h;
+    const x2 = isHorizontal ? x1 + w : x1;
+    const y2 = isHorizontal ? y1 : y1 + h;
+
+    return (
+      <line
+        key={`door-${i}`}
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
+        stroke="#8d6e63"
+        strokeWidth={line.strokeWidth ?? 4}
+        strokeDasharray={line.strokeDashArray?.join(',') ?? '10,5'}
+      />
+    );
+  })}
 
       {/* Лестницы */}
       {canvasJson.objects
         ?.filter((o): o is StairsObj => o.type === 'stairs')
         .map((stairs, i) => {
-          const w = roundToNearest(stairs.width ?? 60);
-          const h = roundToNearest(stairs.height ?? 60);
+          const w = round(stairs.width ?? 60, 10);
+          const h = round(stairs.height ?? 60, 10);
           const { x, y } = adjustPosition(stairs.left, stairs.top, w, h, stairs.originX, stairs.originY);
           return (
             <g key={`stairs-${i}`}>
@@ -186,8 +194,8 @@ export function PathfinderSVG({
                 rx={8}
               />
               <Stars
-                x={x + roundToNearest(w / 2) - 12}
-                y={y + roundToNearest(h / 2) - 12}
+                x={x + w / 2 - 12}
+                y={y + h / 2 - 12}
                 width={24}
                 height={24}
                 color="#ffa726"
@@ -199,7 +207,7 @@ export function PathfinderSVG({
       {/* Путь */}
       {path.length > 1 && (
         <polyline
-          points={path.map((p) => `${roundToNearest(p.x)},${roundToNearest(p.y)}`).join(' ')}
+          points={path.map((p) => `${round(p.x)},${round(p.y)}`).join(' ')}
           fill="none"
           stroke="red"
           strokeWidth={5}

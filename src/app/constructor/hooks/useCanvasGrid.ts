@@ -28,7 +28,6 @@ export const useCanvasGrid = (
     gridCanvas.width = canvasWidth;
     gridCanvas.height = canvasHeight;
     if (!showGrid) return;
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     const scaledGridSize = gridSize * zoom;
     const startX = offsetX % scaledGridSize;

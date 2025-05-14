@@ -35,16 +35,16 @@ export class Stairs extends Group {
       width,
       height,
       fill: "rgba(255, 165, 0, 0.4)",
-      stroke: rectOptions.stroke || "orange",
-      strokeWidth: rectOptions.strokeWidth || 1,
+      stroke: undefined,
+      strokeWidth: 0,
     });
 
     const labelText =
       floors.length > 0 ? `Floors: ${floors.join(", ")}` : label;
 
     const text = new Textbox(labelText, {
-      width,
-      height,
+      width: width - 1,
+      height: height,
       left: width / 2,
       top: height / 2,
       originX: "center",

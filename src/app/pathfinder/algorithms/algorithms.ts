@@ -120,7 +120,6 @@ export class AStar extends PathfindingAlgorithm {
             this.graph.nodes[endNodeId]
           );
           
-          // Add to open set if not already there
           if (!openSet.some(item => item.nodeId === neighborId)) {
             openSet.push({ nodeId: neighborId, fScore: fScore[neighborId] });
           }

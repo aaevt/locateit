@@ -11,7 +11,6 @@ export default function ImportExportBar() {
   const { currentFloorId } = useFloorStore();
 
   const handleImport = () => {
-    if (!canvas) return;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -22,29 +21,51 @@ export default function ImportExportBar() {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target?.result as string);
-          
+
+          // Импорт нескольких этажей
           if (data.floors && Array.isArray(data.floors)) {
+            if (data.floors.length === 1) {
+              // Если только один этаж, импортируем его как canvasJson
+              const floor = data.floors[0];
+              if (!canvas) return;
+              canvas.loadFromJSON(floor.canvasJson, () => {
+                canvas.renderAll();
+                const jsonData = canvas.toJSON();
+                localStorage.setItem(
+                  `floor_${currentFloorId}`,
+                  JSON.stringify(jsonData),
+                );
+              });
+              return;
+            }
             if (confirm("Обнаружен файл с несколькими этажами. Импортировать все этажи? Это заменит текущие этажи.")) {
               localStorage.setItem("floor-store", JSON.stringify({
-                state: { 
+                state: {
                   floors: data.floors,
                   currentFloorId: data.floors[0]?.id || null
                 }
               }));
-              
               alert("Этажи успешно импортированы. Страница будет перезагружена.");
               window.location.reload();
             }
-          } else {
-            canvas.loadFromJSON(data, () => {
-              canvas.renderAll();
-              const jsonData = canvas.toJSON();
-              localStorage.setItem(
-                `floor_${currentFloorId}`,
-                JSON.stringify(jsonData),
-              );
-            });
+            return;
           }
+
+          // Импорт одного этажа: если есть canvasJson, используем его
+          let canvasJson = data;
+          if (data.canvasJson && typeof data.canvasJson === "object") {
+            canvasJson = data.canvasJson;
+          }
+
+          if (!canvas) return;
+          canvas.loadFromJSON(canvasJson, () => {
+            canvas.renderAll();
+            const jsonData = canvas.toJSON();
+            localStorage.setItem(
+              `floor_${currentFloorId}`,
+              JSON.stringify(jsonData),
+            );
+          });
         } catch (error) {
           console.error("Error importing file:", error);
           alert(

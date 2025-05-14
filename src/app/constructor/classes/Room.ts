@@ -37,15 +37,15 @@ export class Room<
     const height = rectOptions.height ?? 50;
 
     const rect = new Rect({
-      width,
-      height,
+      width: width,
+      height: height,
       fill: "rgba(0, 0, 255, 0.5)",
-      stroke: rectOptions.stroke || "black",
-      strokeWidth: rectOptions.strokeWidth || 1,
+      stroke: undefined,
+      strokeWidth: 0,
     });
 
     const text = new Textbox(label, {
-      width,
+      width: width - 1,
       height,
       left: width / 2,
       top: height / 2,
