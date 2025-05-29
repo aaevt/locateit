@@ -1,31 +1,20 @@
-import { Layout, Navbar } from "nextra-theme-docs";
-import { Head } from "nextra/components";
-import { getPageMap } from "nextra/page-map";
-import "nextra-theme-docs/style.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { DocsLayout } from 'fumadocs-ui/layouts/docs';
+import { source } from '@/lib/source';
+import { baseOptions } from '@/app/layout.config';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import type { ReactNode } from 'react';
 
-const navbar = <Navbar logo={<b>Documentation</b>} />;
-
-export default async function DocsLayout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <Head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-      </Head>
-      <body>
-        <Header />
-        <Layout
-          sidebar={{autoCollapse: true}}
-          navbar={navbar}
-          pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/aaevt/locateit/wiki"
-          footer={<br/>}
-        >
+    <div className="flex flex-col min-h-screen bg-white dark:bg-black">
+      <Header />
+      <div className="flex-grow">
+        <DocsLayout tree={source.pageTree} {...baseOptions}>
           {children}
-        </Layout>
-        <Footer/>
-      </body>
-    </html>
+        </DocsLayout>
+      </div>
+      <Footer />
+    </div>
   );
 }

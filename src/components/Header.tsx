@@ -6,7 +6,9 @@ export default function Header() {
     <header className="bg-white dark:bg-black shadow-sm dark:border-b dark:border-gray-800">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center">
-          <Link className="text-xl dark:text-gray-100" href="/">locate it</Link>
+          <Link className="text-xl dark:text-gray-100" href="/">
+            locate it
+          </Link>
         </div>
         <nav className="flex items-center">
           <ul className="flex space-x-2 mr-2">
@@ -15,7 +17,15 @@ export default function Header() {
                 href="/constructor"
                 className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                Constructor
+              Конструктор
+              </Link>
+            </li>
+                        <li>
+              <Link
+                href="/pathfinder"
+                className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                Поиск пути
               </Link>
             </li>
             <li>
@@ -23,15 +33,7 @@ export default function Header() {
                 href="/docs"
                 className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                Docs
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/about"
-                className="text-sm text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                About
+                Документация
               </Link>
             </li>
           </ul>
@@ -41,3 +43,4 @@ export default function Header() {
     </header>
   );
 }
+

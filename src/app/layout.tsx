@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Poppins } from "next/font/google";
+import { RootProvider } from "fumadocs-ui/provider";
 import "./globals.css";
 
 const poppinsMono = Poppins({
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   description: "Indoor maps builder for everyone!",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode; }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       </head>
       <body className={`${poppinsMono.variable} antialiased bg-white dark:bg-black min-h-screen`}>
         <ThemeProvider attribute="class" enableSystem>
-          {children}
+          <RootProvider>{children}</RootProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,4 +1,19 @@
 @import "tailwindcss";
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@custom-variant dark (&:is(.dark *));
+@plugin "tailwind-plugin-typed";
+
+@plugin "tailwindcss-animate";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-mono: var(--font-poppins-mono);
+}
+
+/* @custom-variant dark (&:where(.dark, .dark *)); */
 
 @custom-variant dark (&:is(.dark *));
 @plugin "tailwind-plugin-typed";
@@ -128,3 +143,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-word::after {
+  animation: blink 1s step-start infinite;
+}
+

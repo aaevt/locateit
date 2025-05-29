@@ -1,85 +1,49 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Header from "@/components/Header";
+import React from "react";
 import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import Canvas from "@/app/constructor/components/Canvas";
+import Toolbar from "@/app/constructor/components/Toolbar";
+import Shapesbar from "@/app/constructor/components/Shapesbar";
+import Activebar from "@/app/constructor/components/Activebar";
+import Floorsbar from "@/app/constructor/components/Floorsbar";
+import ImportExportBar from "@/app/constructor/components/ImportExportBar";
 
-import CanvasBuilder from "@/components/constructor/CanvasBuilder";
-import CustomCanvas from "@/components/constructor/CustomCanvas";
-import Toolbar from "@/components/constructor/Toolbar";
-
-export default function Constructor() {
-  const [canvasDimensions, setCanvasDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [scale, setScale] = useState(1);
-
-  const handleCanvasSubmit = (width: number, height: number, backgroundColor: string, showGrid: boolean) => {
-    setCanvasDimensions({ width, height });
-    localStorage.setItem("canvasCreated", "true");
-    localStorage.setItem("canvasBackgroundColor", backgroundColor);
-    localStorage.setItem("canvasShowGrid", showGrid.toString());
-  };
-
-  useEffect(() => {
-    const canvasData = localStorage.getItem("canvasCreated");
-    if (canvasData) {
-      const savedWidth = localStorage.getItem("canvasWidth");
-      const savedHeight = localStorage.getItem("canvasHeight");
-      if (savedWidth && savedHeight) {
-        setCanvasDimensions({ width: parseInt(savedWidth), height: parseInt(savedHeight) });
-      }
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (canvasDimensions) {
-      localStorage.setItem("canvasWidth", canvasDimensions.width.toString());
-      localStorage.setItem("canvasHeight", canvasDimensions.height.toString());
-    }
-  }, [canvasDimensions]);
-
-  const handleWheel = (event: React.WheelEvent) => {
-    event.preventDefault();
-    setScale((prevScale) => {
-      let newScale = prevScale + event.deltaY * -0.001;
-      return Math.min(Math.max(newScale, 0.5), 2);
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-white dark:bg-black">
-        <Header />
-        <main className="flex flex-grow flex-col items-center justify-center">
-          <div className="flex space-x-2 justify-center items-center bg-white h-screen dark:invert">
-            <span className="sr-only">Loading...</span>
-            <div className="h-8 w-8 bg-black rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="h-8 w-8 bg-black rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="h-8 w-8 bg-black rounded-full animate-bounce"></div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
+const ConstructorPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black">
       <Header />
-      <main className="flex flex-grow flex-col items-center justify-center overflow-hidden">
-        {!canvasDimensions ? (
-          <CanvasBuilder onSubmit={handleCanvasSubmit} />
-        ) : (
-              <CustomCanvas
-                width={canvasDimensions.width}
-                height={canvasDimensions.height}
-                backgroundColor={localStorage.getItem("canvasBackgroundColor") || "#ffffff"}
-                showGrid={localStorage.getItem("canvasShowGrid") === "true"}
-              />
-        )}
-      </main>
+      <div className="flex flex-col flex-grow p-20 overflow-hidden">
+        <div className="flex flew-row justify-center">
+        <Toolbar />
+
+        <div className="flex flex-col h-full px-4 gap-4">
+          <Shapesbar />
+        </div>
+
+        <div className="flex flex-col justify-center overflow-hidden">
+          <div className="flex items-center justify-center">
+            <Canvas />
+          </div>
+
+          <div className="pt-4 ">
+            <ImportExportBar />
+          </div>
+
+        </div>
+
+        <div className="flex flex-col h-full px-4 gap-4">
+          <Floorsbar />
+          <Activebar />
+        </div>
+
+        </div>
+
+      </div>
       <Footer />
     </div>
   );
-}
+};
+
+export default ConstructorPage;
