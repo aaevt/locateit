@@ -7,12 +7,13 @@ import type { FloorGrid, GridCell } from "./PathfinderApp";
 
 interface PathfindingVisualizationProps {
   canvasJson: CanvasJson | null;
-  pathPoints: { x: number; y: number }[];
+  pathPoints: { x: number; y: number; floor?: number }[];
   debugGrid?: boolean;
   grid?: FloorGrid | null;
+  currentFloorNumber?: number; // Новый проп для текущего этажа
 }
 
-export function PathfindingVisualization({ canvasJson, pathPoints, debugGrid, grid }: PathfindingVisualizationProps) {
+export function PathfindingVisualization({ canvasJson, pathPoints, debugGrid, grid, currentFloorNumber }: PathfindingVisualizationProps) {
   let width = 1000;
   let height = 1000;
   if (canvasJson && Array.isArray(canvasJson.objects)) {
@@ -33,6 +34,10 @@ export function PathfindingVisualization({ canvasJson, pathPoints, debugGrid, gr
     width = Math.max(width, maxX + 50);
     height = Math.max(height, maxY + 50);
   }
+  // Фильтруем точки пути по текущему этажу, если он задан
+  const filteredPathPoints = currentFloorNumber !== undefined
+    ? pathPoints.filter(p => p.floor === currentFloorNumber)
+    : pathPoints;
   return (
     <Card className="my-6">
       <CardContent>
@@ -40,7 +45,7 @@ export function PathfindingVisualization({ canvasJson, pathPoints, debugGrid, gr
         <div className="flex flex-col items-center">
           {canvasJson ? (
             <div style={{ position: 'relative', width, height }}>
-              <PathfinderSVG canvasJson={canvasJson} path={pathPoints} width={width} height={height} />
+              <PathfinderSVG canvasJson={canvasJson} path={filteredPathPoints} width={width} height={height} />
               {debugGrid && grid && (
                 <svg
                   width={width}
