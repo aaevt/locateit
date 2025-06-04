@@ -220,3 +220,5 @@ export function PathfinderSVG({
     </svg>
   );
 }
+
+export type { RoomObj, LineObj, StairsObj };

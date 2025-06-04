@@ -9,6 +9,9 @@ import { PathfindingResult } from "./PathfindingResult";
 import { PathfindingVisualization } from "./PathfindingVisualization";
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { InsertExportModal } from "./InsertExportModal";
+import { generateEmbedCode, generateAllRoomPathsEmbedCode } from "../utils/generateEmbedCode";
+import type { CanvasJson, RoomObj, LineObj, StairsObj } from "./PathfinderSVG";
 
 export function PathfinderApp() {
   const [start, setStart] = useState("");
@@ -19,6 +22,7 @@ export function PathfinderApp() {
   const [floors, setFloors] = useState<any[]>([]);
   const [currentFloorId, setCurrentFloorId] = useState("");
   const [debugGrid, setDebugGrid] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   let canvasJson: any = null;
   let grid: any = null;
@@ -199,6 +203,11 @@ export function PathfinderApp() {
                 <input type="checkbox" id="debugGrid" checked={debugGrid} onChange={e => setDebugGrid(e.target.checked)} />
                 <label htmlFor="debugGrid" className="text-sm select-none cursor-pointer">Debug grid (показать сетку и стены)</label>
               </div>
+              <div className="flex flex-row gap-2 mb-4">
+                <Button variant="outline" onClick={() => setExportModalOpen(true)}>
+                  Создать вставку
+                </Button>
+              </div>
               <div className="flex-1 flex flex-col gap-6 min-h-0">
                 <PathfindingVisualization
                   canvasJson={canvasJson}
@@ -213,6 +222,11 @@ export function PathfinderApp() {
           </Card>
         </div>
       </main>
+      <InsertExportModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+        onCalculatePaths={() => generateAllRoomPathsEmbedCode(floorsData, rooms, floors, generateGrid, gridAStar)}
+      />
     </div>
   );
 }

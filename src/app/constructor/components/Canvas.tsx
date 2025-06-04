@@ -86,7 +86,6 @@ useEffect(() => {
 
   canvas.backgroundColor = backgroundColor;
 
-  console.log(backgroundImage);
   if (backgroundImage) {
     FabricImage.fromURL(backgroundImage, (img) => {
       if (!img) {
